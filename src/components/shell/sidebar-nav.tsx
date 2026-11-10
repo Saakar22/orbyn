@@ -13,13 +13,16 @@ const NAV = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+/** Reads the URL, so it must sit inside <Suspense>; use <NavLinks /> without a pathname as the fallback. */
 export function SidebarNav() {
-  const pathname = usePathname();
+  return <NavLinks pathname={usePathname()} />;
+}
 
+export function NavLinks({ pathname }: { pathname?: string }) {
   return (
     <nav className="flex flex-row gap-0.5 overflow-x-auto md:flex-col md:overflow-visible">
       {NAV.map(({ href, label, icon: Icon, ai }) => {
-        const active = pathname === href || pathname.startsWith(`${href}/`);
+        const active = pathname !== undefined && (pathname === href || pathname.startsWith(`${href}/`));
         return (
           <Link
             key={href}

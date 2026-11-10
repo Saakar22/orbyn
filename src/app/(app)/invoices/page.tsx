@@ -6,6 +6,7 @@ import { SourceBadge, StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { describeDue, formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
+import { balanceDue, displayStatus } from "@/lib/payments";
 import { listInvoices, listInvoicesInput } from "@/server/services/invoices";
 import { requireUser } from "@/server/session";
 
@@ -62,7 +63,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                   <div className="text-xs text-muted-foreground">{invoice.client.company}</div>
                 </td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={invoice.status} />
+                  <StatusBadge status={displayStatus(invoice)} />
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">{formatDate(invoice.issueDate)}</td>
                 <td className="px-4 py-3">
@@ -75,6 +76,11 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                 </td>
                 <td className="tabular px-4 py-3 text-right font-medium">
                   {formatMoney(invoice.totalMinor, invoice.currency)}
+                  {invoice.amountPaidMinor > 0 && invoice.amountPaidMinor < invoice.totalMinor ? (
+                    <div className="text-xs font-normal text-muted-foreground">
+                      {formatMoney(balanceDue(invoice), invoice.currency)} due
+                    </div>
+                  ) : null}
                 </td>
               </tr>
             ))}

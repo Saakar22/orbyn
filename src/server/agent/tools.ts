@@ -1,6 +1,7 @@
 import "server-only";
 import { tool, type InferUITools, type UIMessage } from "ai";
 import { z } from "zod";
+import { balanceDue } from "@/lib/payments";
 import { db } from "@/server/db";
 import {
   getFinancialSummary,
@@ -36,6 +37,8 @@ function invoiceSummary(invoice: InvoiceRow) {
     description: invoice.description,
     status: invoice.status,
     totalMinor: invoice.totalMinor,
+    amountPaidMinor: invoice.amountPaidMinor,
+    balanceMinor: balanceDue(invoice),
     currency: invoice.currency,
     issueDate: invoice.issueDate.toISOString(),
     dueDate: invoice.dueDate.toISOString(),
@@ -164,7 +167,7 @@ export function createOrbynTools(userId: string) {
       inputSchema: z.object({}),
       execute: async () => {
         const invoices = await getOverdueInvoices(userId);
-        return { invoices, totalMinor: invoices.reduce((sum, i) => sum + i.totalMinor, 0), count: invoices.length };
+        return { invoices, totalMinor: invoices.reduce((sum, i) => sum + i.balanceMinor, 0), count: invoices.length };
       },
     }),
 

@@ -110,7 +110,7 @@ export default async function DashboardPage() {
                         {invoice.invoiceNumber} · {describeDue(invoice.dueDate)}
                       </div>
                     </div>
-                    <span className="tabular font-medium">{formatMoney(invoice.totalMinor, invoice.currency)}</span>
+                    <span className="tabular font-medium">{formatMoney(invoice.balanceMinor, invoice.currency)}</span>
                   </Link>
                 </li>
               );

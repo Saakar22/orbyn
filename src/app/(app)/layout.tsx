@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { OrbynWordmark } from "@/components/brand/orbyn-mark";
-import { SidebarNav } from "@/components/shell/sidebar-nav";
+import { NavLinks, SidebarNav } from "@/components/shell/sidebar-nav";
 import { UserBlock } from "@/components/shell/user-block";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -18,7 +18,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           </span>
         </div>
         <div className="px-2 pb-2 md:flex-1 md:pb-0">
-          <SidebarNav />
+          <Suspense fallback={<NavLinks />}>
+            <SidebarNav />
+          </Suspense>
         </div>
         <div className="hidden border-t border-sidebar-border p-2 md:block">
           <Suspense fallback={<Skeleton className="h-10 bg-sidebar-accent" />}>

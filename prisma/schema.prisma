@@ -92,6 +92,8 @@ model Invoice {
   taxRateBps    Int           @default(0)
   taxMinor      Int           @default(0)
   totalMinor    Int
+  // Sum of COMPLETED captures. Kept in step with Transaction rows inside the same DB transaction.
+  amountPaidMinor Int         @default(0)
   status        InvoiceStatus @default(DRAFT)
   issueDate     DateTime      @default(now())
   dueDate       DateTime

@@ -98,6 +98,7 @@ export async function seedDemoWorkspace(db: PrismaClient, userId: string) {
         subtotalMinor: totals.subtotalMinor,
         taxMinor: totals.taxMinor,
         totalMinor: totals.totalMinor,
+        amountPaidMinor: paidAt ? totals.totalMinor : 0,
         status: seed.status,
         issueDate,
         dueDate: new Date(issueDate.getTime() + seed.termDays * DAY_MS),

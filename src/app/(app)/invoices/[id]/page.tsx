@@ -9,6 +9,7 @@ import { SourceBadge, StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
+import { balanceDue, displayStatus, isPayableStatus } from "@/lib/payments";
 import { getInvoice } from "@/server/services/invoices";
 import { requireUser } from "@/server/session";
 
@@ -18,7 +19,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoices
   const invoice = await getInvoice(user.id, { id });
   if (!invoice) notFound();
 
-  const payable = invoice.status === "PENDING" || invoice.status === "OVERDUE";
+  const payable = isPayableStatus(invoice.status) && balanceDue(invoice) > 0;
   const payPath = `/pay/${invoice.publicToken}`;
 
   return (
@@ -52,6 +53,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoices
         <InvoiceDocument
           invoice={{
             ...invoice,
+            status: displayStatus(invoice),
             issuer: { name: user.name, businessName: user.businessName, email: user.email },
           }}
         />

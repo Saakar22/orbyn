@@ -15,6 +15,7 @@ export type InvoiceDocumentData = {
   taxRateBps: number;
   taxMinor: number;
   totalMinor: number;
+  amountPaidMinor?: number;
   issuer: { name: string; businessName?: string | null; email?: string | null };
   client: { name: string; company?: string | null; email?: string | null };
   items: { description: string; quantity: number; unitPriceMinor: number; totalMinor: number }[];
@@ -98,6 +99,18 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceDocumentData }) {
           <dt>Total</dt>
           <dd className="tabular">{money(invoice.totalMinor)}</dd>
         </div>
+        {invoice.amountPaidMinor && invoice.amountPaidMinor < invoice.totalMinor ? (
+          <>
+            <div className="flex justify-between text-muted-foreground">
+              <dt>Amount paid</dt>
+              <dd className="tabular">−{money(invoice.amountPaidMinor)}</dd>
+            </div>
+            <div className="flex justify-between border-t pt-2 text-base font-semibold">
+              <dt>Balance due</dt>
+              <dd className="tabular">{money(invoice.totalMinor - invoice.amountPaidMinor)}</dd>
+            </div>
+          </>
+        ) : null}
       </dl>
     </article>
   );

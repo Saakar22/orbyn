@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { balanceDue } from "@/lib/payments";
 import { db } from "@/server/db";
 
 const DAY_MS = 86_400_000;
@@ -38,15 +39,24 @@ export async function getOutstanding(userId: string) {
   const now = new Date();
   const rows = await db.invoice.findMany({
     where: { userId, status: { in: ["PENDING", "OVERDUE"] } },
-    select: { id: true, invoiceNumber: true, totalMinor: true, currency: true, dueDate: true, client: { select: { name: true } } },
+    select: {
+      id: true,
+      invoiceNumber: true,
+      totalMinor: true,
+      amountPaidMinor: true,
+      currency: true,
+      dueDate: true,
+      client: { select: { name: true } },
+    },
     orderBy: { dueDate: "asc" },
   });
-  const unpaid = rows.map((row) => ({ ...row, isOverdue: row.dueDate < now }));
+  // Outstanding money is the balance still due, so partial payments reduce it.
+  const unpaid = rows.map((row) => ({ ...row, balanceMinor: balanceDue(row), isOverdue: row.dueDate < now }));
   const overdue = unpaid.filter((invoice) => invoice.isOverdue);
-  const sum = (rows: typeof unpaid) => rows.reduce((total, row) => total + row.totalMinor, 0);
+  const sum = (rows: typeof unpaid) => rows.reduce((total, row) => total + row.balanceMinor, 0);
 
   const byClient = new Map<string, number>();
-  for (const invoice of unpaid) byClient.set(invoice.client.name, (byClient.get(invoice.client.name) ?? 0) + invoice.totalMinor);
+  for (const invoice of unpaid) byClient.set(invoice.client.name, (byClient.get(invoice.client.name) ?? 0) + invoice.balanceMinor);
 
   return {
     outstandingMinor: sum(unpaid),
@@ -103,6 +113,8 @@ export async function getOverdueInvoices(userId: string) {
       invoiceNumber: invoice.invoiceNumber,
       client: invoice.client.name,
       totalMinor: invoice.totalMinor,
+      amountPaidMinor: invoice.amountPaidMinor,
+      balanceMinor: invoice.balanceMinor,
       currency: invoice.currency,
       dueDate: invoice.dueDate.toISOString(),
       daysOverdue: Math.floor((now - invoice.dueDate.getTime()) / DAY_MS),
