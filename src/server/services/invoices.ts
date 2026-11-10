@@ -266,6 +266,12 @@ export async function setInvoiceStatus(userId: string, id: string, next: Invoice
   }
   return db.$transaction(async (tx) => {
     const updated = await tx.invoice.update({ where: { id }, data: { status: next } });
+    if (next === "CANCELLED") {
+      await tx.reminder.updateMany({
+        where: { invoiceId: id, status: { in: ["DRAFT", "SCHEDULED", "DUE"] } },
+        data: { status: "CANCELLED" },
+      });
+    }
     await audit(
       { userId, actor, action: `invoice.${next.toLowerCase()}`, entityType: "Invoice", entityId: id },
       tx,

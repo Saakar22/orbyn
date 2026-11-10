@@ -8,9 +8,11 @@ import { formatMoney } from "@/lib/money";
 import type { OrbynUIMessage } from "@/server/agent/tools";
 import {
   type DraftInvoiceOutput,
+  type DraftReminderOutput,
   InvoiceDetailCard,
   InvoiceListCard,
   InvoicePreviewCard,
+  ReminderPreviewCard,
   SummaryCard,
   TransactionsCard,
 } from "./cards";
@@ -24,6 +26,8 @@ const TOOL_LABELS: Record<string, { running: string; done: string }> = {
   get_invoice_details: { running: "Opening invoice", done: "Opened invoice" },
   draft_invoice: { running: "Drafting invoice", done: "Drafted invoice" },
   issue_invoice: { running: "Issuing invoice", done: "Issued invoice" },
+  draft_reminder: { running: "Drafting reminder", done: "Drafted reminder" },
+  schedule_reminder: { running: "Scheduling reminder", done: "Scheduled reminder" },
   get_overdue_invoices: { running: "Checking overdue invoices", done: "Checked overdue invoices" },
   get_financial_summary: { running: "Calculating financial summary", done: "Calculated financial summary" },
   get_recent_transactions: { running: "Fetching transactions", done: "Fetched transactions" },
@@ -86,6 +90,16 @@ function findDraft(message: OrbynUIMessage, invoiceId: string | undefined) {
   return null;
 }
 
+function findReminderDraft(message: OrbynUIMessage, reminderId: string | undefined) {
+  for (const part of message.parts) {
+    if (part.type === "tool-draft_reminder" && part.state === "output-available") {
+      const output = part.output as DraftReminderOutput;
+      if (output.reminderId === reminderId) return output;
+    }
+  }
+  return null;
+}
+
 function renderToolPart(part: ToolPart, message: OrbynUIMessage, respond: Respond): ReactNode {
   const name = toolName(part);
 
@@ -122,6 +136,33 @@ function renderToolPart(part: ToolPart, message: OrbynUIMessage, respond: Respon
     }
     if (part.state === "output-available") {
       return findDraft(message, (part.input as { invoiceId: string }).invoiceId) ? null : <ToolChip name={name} state="done" />;
+    }
+  }
+
+  // schedule_reminder: the approval UI is attached to the reminder preview card (see draft_reminder below).
+  if (name === "schedule_reminder") {
+    const input = part.input as { reminderId?: string };
+    const attached = findReminderDraft(message, input.reminderId);
+    if (part.state === "approval-requested" || part.state === "approval-responded") {
+      if (attached) return null;
+      return part.state === "approval-requested" ? (
+        <div className="overflow-hidden rounded-lg border bg-card">
+          <ApprovalBar
+            title="Schedule this reminder?"
+            detail="It will show up on your dashboard, ready to send from your email."
+            approveLabel="Approve & schedule"
+            onApprove={() => respond({ id: part.approval.id, approved: true })}
+            onDeny={() => respond({ id: part.approval.id, approved: false })}
+          />
+        </div>
+      ) : (
+        <ToolChip name={name} state="running" />
+      );
+    }
+    if (part.state === "output-available") {
+      const error = (part.output as { error?: string }).error;
+      if (error) return <p className="text-xs text-danger">{error}</p>;
+      return attached ? null : <ToolChip name={name} state="done" />;
     }
   }
 
@@ -164,6 +205,43 @@ function renderToolPart(part: ToolPart, message: OrbynUIMessage, respond: Respon
         footer = <div className="border-t px-3.5 py-2 text-xs text-muted-foreground">Not issued. The draft is saved.</div>;
       }
       return <InvoicePreviewCard draft={draft} status={status} footer={footer} />;
+    }
+    case "draft_reminder": {
+      if (output.error) return <p className="text-xs text-danger">{String(output.error)}</p>;
+      const reminder = output as unknown as DraftReminderOutput;
+      const schedule = message.parts.find(
+        (p): p is ToolPart =>
+          p.type === "tool-schedule_reminder" && (p.input as { reminderId?: string } | undefined)?.reminderId === reminder.reminderId,
+      );
+      let status = reminder.status;
+      let footer: ReactNode = null;
+      if (schedule?.state === "approval-requested") {
+        footer = (
+          <ApprovalBar
+            title={`Schedule this reminder for ${reminder.client}?`}
+            detail="You send it yourself from your email. Orbyn never emails clients on its own."
+            approveLabel="Approve & schedule"
+            onApprove={() => respond({ id: schedule.approval.id, approved: true })}
+            onDeny={() => respond({ id: schedule.approval.id, approved: false, reason: "User declined" })}
+          />
+        );
+      } else if (schedule?.state === "approval-responded" || schedule?.state === "input-available") {
+        footer = (
+          <div className="flex items-center gap-2 border-t px-3.5 py-2 text-xs text-muted-foreground">
+            <Loader2 className="size-3 animate-spin" /> Scheduling…
+          </div>
+        );
+      } else if (schedule?.state === "output-available" && !(schedule.output as { error?: string }).error) {
+        status = (schedule.output as { status: string }).status;
+        footer = (
+          <div className="flex items-center gap-2 border-t px-3.5 py-2 text-xs text-success">
+            <Check className="size-3.5" /> Scheduled. Send it from the invoice page or your dashboard.
+          </div>
+        );
+      } else if (schedule?.state === "output-denied") {
+        footer = <div className="border-t px-3.5 py-2 text-xs text-muted-foreground">Not scheduled. The draft is kept on the invoice.</div>;
+      }
+      return <ReminderPreviewCard reminder={reminder} status={status} footer={footer} />;
     }
     case "get_invoices":
       return (

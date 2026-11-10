@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     }),
     messages: await convertToModelMessages(messages, { tools }),
     tools,
-    toolApproval: { issue_invoice: "user-approval" },
+    toolApproval: { issue_invoice: "user-approval", schedule_reminder: "user-approval" },
     experimental_toolApprovalSecret: process.env.TOOL_APPROVAL_SECRET,
     stopWhen: isStepCount(6),
     temperature: 0.2,

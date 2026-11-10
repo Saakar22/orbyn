@@ -3,14 +3,18 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { cancelInvoiceAction } from "@/app/actions/invoices";
 import { CopyLinkButton } from "@/components/invoices/copy-link-button";
+import { ReminderActions } from "@/components/reminders/reminder-actions";
+import { ReminderForm } from "@/components/reminders/reminder-form";
 import { InvoiceDocument } from "@/components/invoices/invoice-document";
 import { PageContainer } from "@/components/page-header";
 import { SourceBadge, StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { formatDateTime } from "@/lib/format";
+import { dateInputFromToday, daysUntil, formatDateTime } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
 import { balanceDue, displayStatus, isPayableStatus } from "@/lib/payments";
+import { reminderDisplayStatus, reminderSubject, TONE_LABELS, type ReminderTone } from "@/lib/reminders";
 import { getInvoice } from "@/server/services/invoices";
+import { reminderTemplates } from "@/server/services/reminders";
 import { requireUser } from "@/server/session";
 
 export default async function InvoiceDetailPage({ params }: PageProps<"/invoices/[id]">) {
@@ -21,6 +25,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoices
 
   const payable = isPayableStatus(invoice.status) && balanceDue(invoice) > 0;
   const payPath = `/pay/${invoice.publicToken}`;
+  const templates = payable ? await reminderTemplates(user.id, invoice.id) : null;
 
   return (
     <PageContainer>
@@ -94,20 +99,45 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoices
           <section className="rounded-lg border bg-card p-4">
             <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Reminders</h2>
             <ol className="mt-3 space-y-3 text-[13px]">
-              {invoice.reminders.map((reminder) => (
-                <li key={reminder.id}>
-                  <div className="flex items-center justify-between gap-2">
-                    <span>{formatDateTime(reminder.scheduledAt)}</span>
-                    <StatusBadge status={reminder.status} />
-                  </div>
-                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{reminder.message}</p>
-                </li>
-              ))}
+              {invoice.reminders.map((reminder) => {
+                const status = reminderDisplayStatus(reminder);
+                return (
+                  <li key={reminder.id}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{formatDateTime(reminder.sentAt ?? reminder.scheduledAt)}</span>
+                      <StatusBadge status={status} />
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">{TONE_LABELS[reminder.tone as ReminderTone] ?? reminder.tone}</div>
+                    <p className="mt-1 line-clamp-2 whitespace-pre-line text-xs text-muted-foreground">{reminder.message}</p>
+                    <ReminderActions
+                      reminderId={reminder.id}
+                      invoiceId={invoice.id}
+                      status={status}
+                      clientEmail={invoice.client.email}
+                      subject={reminderSubject(invoice.invoiceNumber, reminder.tone)}
+                      message={reminder.message}
+                    />
+                  </li>
+                );
+              })}
               {invoice.reminders.length === 0 ? <li className="text-muted-foreground">None scheduled.</li> : null}
             </ol>
+            {templates ? (
+              <div className="mt-4">
+                <ReminderForm invoiceId={invoice.id} templates={templates} suggestedTone={suggestedTone(invoice.dueDate)} today={dateInputFromToday(0)} />
+              </div>
+            ) : null}
           </section>
         </aside>
       </div>
     </PageContainer>
   );
+}
+
+/** Escalate the default tone with how late the invoice is. */
+function suggestedTone(dueDate: Date): ReminderTone {
+  const late = -daysUntil(dueDate);
+  if (late > 14) return "final";
+  if (late > 0) return "firm";
+  return "polite";
 }

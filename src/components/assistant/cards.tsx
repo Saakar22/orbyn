@@ -266,3 +266,50 @@ export function InvoiceDetailCard({ invoice }: { invoice: InvoiceListItem & { de
     </CardShell>
   );
 }
+
+export type DraftReminderOutput = {
+  reminderId: string;
+  status: string;
+  invoiceId: string;
+  invoiceNumber: string;
+  client: string;
+  clientEmail: string | null;
+  tone: string;
+  message: string;
+  scheduledAt: string;
+  balanceMinor: number;
+  currency: string;
+};
+
+const TONE_NAMES: Record<string, string> = { polite: "Friendly", firm: "Firm", final: "Final notice" };
+
+export function ReminderPreviewCard({ reminder, status, footer }: { reminder: DraftReminderOutput; status?: string; footer?: ReactNode }) {
+  return (
+    <CardShell
+      title={
+        <>
+          <FileText className="size-3.5 text-muted-foreground" />
+          Reminder · <span className="font-mono">{reminder.invoiceNumber}</span>
+          <StatusBadge status={status ?? reminder.status} />
+        </>
+      }
+      meta={`${formatMoney(reminder.balanceMinor, reminder.currency)} due`}
+    >
+      <div className="space-y-2 px-3.5 py-3">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span>
+            To <span className="font-medium text-foreground">{reminder.client}</span>
+            {reminder.clientEmail ? ` · ${reminder.clientEmail}` : " · no email on file"}
+          </span>
+          <span>{TONE_NAMES[reminder.tone] ?? reminder.tone}</span>
+          <span>{formatDate(reminder.scheduledAt)}</span>
+        </div>
+        <p className="whitespace-pre-line rounded-md bg-muted/50 p-3 text-xs leading-relaxed">{reminder.message}</p>
+        <Link href={`/invoices/${reminder.invoiceId}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          Open invoice <ExternalLink className="size-3" />
+        </Link>
+      </div>
+      {footer}
+    </CardShell>
+  );
+}

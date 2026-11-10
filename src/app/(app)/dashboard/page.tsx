@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowDownRight, BellRing, ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { PageContainer, PageHeader } from "@/components/page-header";
@@ -9,6 +9,7 @@ import { describeDue, formatDateTime } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { getFinancialSummary, getMonthlyRevenue, getOutstanding, getRecentTransactions } from "@/server/services/analytics";
+import { listDueReminders } from "@/server/services/reminders";
 import { requireUser } from "@/server/session";
 
 export const metadata = { title: "Dashboard" };
@@ -21,11 +22,12 @@ const QUICK_ACTIONS = [
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const [summary, monthly, outstanding, transactions] = await Promise.all([
+  const [summary, monthly, outstanding, transactions, dueReminders] = await Promise.all([
     getFinancialSummary(user.id, { period: "this_month" }),
     getMonthlyRevenue(user.id, 6),
     getOutstanding(user.id),
     getRecentTransactions(user.id, { limit: 6 }),
+    listDueReminders(user.id),
   ]);
   const up = (summary.revenueChangePct ?? 0) >= 0;
 
@@ -42,6 +44,29 @@ export default async function DashboardPage() {
           </Button>
         }
       />
+
+      {dueReminders.length ? (
+        <section className="rounded-lg border border-warning/40 bg-warning-soft/40 px-4 py-3">
+          <h2 className="flex items-center gap-2 text-[13px] font-semibold">
+            <BellRing className="size-4 text-warning" />
+            {dueReminders.length} reminder{dueReminders.length === 1 ? "" : "s"} ready to send
+          </h2>
+          <ul className="mt-2 flex flex-wrap gap-2 text-[13px]">
+            {dueReminders.map((reminder) => (
+              <li key={reminder.id}>
+                <Link
+                  href={`/invoices/${reminder.invoice.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1 hover:bg-muted/60"
+                >
+                  <span className="font-medium">{reminder.invoice.client.name}</span>
+                  <span className="font-mono text-[11px] text-muted-foreground">{reminder.invoice.invoiceNumber}</span>
+                  <ArrowRight className="size-3 text-muted-foreground" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border lg:grid-cols-4">
         <Kpi label="Revenue this month" value={formatMoney(summary.revenueMinor)}>

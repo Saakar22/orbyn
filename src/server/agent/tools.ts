@@ -2,6 +2,7 @@ import "server-only";
 import { tool, type InferUITools, type UIMessage } from "ai";
 import { z } from "zod";
 import { balanceDue } from "@/lib/payments";
+import { REMINDER_TONES } from "@/lib/reminders";
 import { db } from "@/server/db";
 import {
   getFinancialSummary,
@@ -19,13 +20,14 @@ import {
   listInvoicesInput,
   saveInvoiceDraft,
 } from "@/server/services/invoices";
+import { createReminder, ReminderError, scheduleReminder } from "@/server/services/reminders";
 
 /**
  * Permission tiers. READ and DRAFT tools run automatically; APPROVAL tools pause the agent loop
  * until the user explicitly approves in the UI. Approvals are HMAC-signed and checked against
  * server-held history (see chat route), and every tool re-validates against the database.
  */
-export const APPROVAL_TOOLS = ["issue_invoice"] as const;
+export const APPROVAL_TOOLS = ["issue_invoice", "schedule_reminder"] as const;
 
 type InvoiceRow = Awaited<ReturnType<typeof listInvoices>>[number];
 
@@ -159,6 +161,61 @@ export function createOrbynTools(userId: string) {
           dueDate: invoice.dueDate.toISOString(),
           alreadyIssued,
         };
+      },
+    }),
+
+    draft_reminder: tool({
+      description:
+        "Draft a payment reminder for an unpaid invoice. Saves a DRAFT only; then call schedule_reminder with the " +
+        "returned reminderId so the user can review and approve. Omit message to use Orbyn's template for the tone. " +
+        "Tone: polite (not yet due or just due), firm (overdue), final (long overdue).",
+      inputSchema: z.object({
+        invoiceNumber: z.string().regex(/^INV-\d{4,}$/i).describe("e.g. INV-0012"),
+        tone: z.enum(REMINDER_TONES).default("polite"),
+        message: z.string().trim().min(1).max(2000).optional().describe("Full reminder text, if writing a custom one"),
+        sendInDays: z.number().int().min(0).max(60).default(0).describe("0 = ready to send today"),
+      }),
+      execute: async ({ invoiceNumber, tone, message, sendInDays }) => {
+        const found = await getInvoice(userId, { invoiceNumber });
+        if (!found) return { error: `Invoice ${invoiceNumber} not found.` };
+        try {
+          const { reminder, invoice } = await createReminder(
+            userId,
+            { invoiceId: found.id, tone, message, scheduledAt: new Date(Date.now() + sendInDays * 86_400_000) },
+            "agent",
+            true,
+          );
+          return {
+            reminderId: reminder.id,
+            status: reminder.status,
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            client: invoice.client.name,
+            clientEmail: invoice.client.email,
+            tone: reminder.tone,
+            message: reminder.message,
+            scheduledAt: reminder.scheduledAt.toISOString(),
+            balanceMinor: balanceDue(invoice),
+            currency: invoice.currency,
+          };
+        } catch (error) {
+          if (error instanceof ReminderError) return { error: error.message };
+          throw error;
+        }
+      },
+    }),
+
+    schedule_reminder: tool({
+      description: "Schedule a drafted reminder so it shows up for sending. Requires the user's approval in the UI.",
+      inputSchema: z.object({ reminderId: z.string().min(1) }),
+      execute: async ({ reminderId }) => {
+        try {
+          const { reminder, changed } = await scheduleReminder(userId, reminderId, "agent");
+          return { reminderId: reminder.id, status: reminder.status, scheduledAt: reminder.scheduledAt.toISOString(), alreadyScheduled: !changed };
+        } catch (error) {
+          if (error instanceof ReminderError) return { error: error.message };
+          throw error;
+        }
       },
     }),
 

@@ -14,6 +14,7 @@ import {
 import { db } from "@/server/db";
 import { audit, type Actor } from "@/server/services/audit";
 import { effectiveStatus } from "@/server/services/invoices";
+import { cancelOpenReminders } from "@/server/services/reminders";
 
 /** An error whose message is safe to show to the person paying. */
 export class PaymentError extends Error {}
@@ -188,6 +189,7 @@ export async function recordCapture(
         const settled = settleAfterPayment(current, current.amountPaidMinor, capturedAt);
         if (settled.status === "PAID" && current.status !== "PAID") {
           current = await tx.invoice.update({ where: { id: invoiceId }, data: { status: "PAID", paidAt: settled.paidAt } });
+          await cancelOpenReminders(tx, invoiceId);
         }
       }
 
