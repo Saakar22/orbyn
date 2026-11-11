@@ -5,6 +5,7 @@ import { Story } from "@/components/landing/story";
 import { Statement } from "@/components/landing/statement";
 import { Trust } from "@/components/landing/trust";
 import { BuilderNote } from "@/components/landing/builder-note";
+import { Closing, Footer } from "@/components/landing/closing";
 import { SmoothScroll } from "@/components/landing/smooth-scroll";
 import "./landing.css";
 
@@ -29,6 +30,8 @@ export default function Landing() {
         <Playground />
         <Trust />
         <BuilderNote />
+        <Closing />
+        <Footer />
       </main>
     </div>
   );

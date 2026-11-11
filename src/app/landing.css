@@ -670,6 +670,41 @@ html.lenis body {
     gap: 0.15rem;
   }
 
+  /* ---------- Closing + footer ---------- */
+  .landing .closing {
+    padding-block: var(--section-gap);
+    border-top: 1px solid var(--line);
+  }
+  .landing .closing h2 {
+    font-size: var(--step-statement);
+    line-height: 0.95;
+  }
+
+  /* The page ends on ink: the footer inverts the palette. */
+  .landing .footer {
+    padding-top: clamp(2.5rem, 5vw, 4rem);
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 0.875rem;
+    overflow: hidden;
+  }
+  .landing .footer .nav-link {
+    color: var(--paper);
+  }
+  .landing .footer :focus-visible {
+    outline-color: var(--paper);
+  }
+  .landing .footer-wordmark {
+    display: block;
+    width: 100%;
+    height: clamp(5.5rem, 23vw, 23rem);
+    margin-top: clamp(2rem, 5vw, 4rem);
+    padding-inline: var(--gutter);
+    fill: var(--paper);
+    font-size: 300px;
+    letter-spacing: 0;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .landing .story-dots i,
     .landing .mask > span,
