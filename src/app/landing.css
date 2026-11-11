@@ -161,7 +161,7 @@ html.lenis body {
 
   .landing .orbit {
     position: absolute;
-    left: 50%;
+    left: 57%;
     top: 46%;
     width: 0.94em;
     height: 0.3em;
@@ -216,6 +216,31 @@ html.lenis body {
     inset: 0;
     background: var(--ink);
     animation: landing-cue 2.4s cubic-bezier(0.6, 0, 0.2, 1) infinite;
+  }
+
+  /* ---------- Statement ---------- */
+  .landing .statement {
+    padding-block: var(--section-gap);
+  }
+  .landing .statement h2 {
+    font-size: var(--step-statement);
+    line-height: 0.98;
+  }
+  .landing .statement-line {
+    display: block;
+    white-space: nowrap;
+  }
+  /* Each line steps further in, so the four beats read as a descent. */
+  @media (min-width: 768px) {
+    .landing .statement-line[data-line="1"] {
+      margin-left: 12%;
+    }
+    .landing .statement-line[data-line="2"] {
+      margin-left: 24%;
+    }
+    .landing .statement-line[data-line="3"] {
+      margin-left: 36%;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

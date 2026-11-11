@@ -1,5 +1,6 @@
 import { Instrument_Serif } from "next/font/google";
 import { Hero } from "@/components/landing/hero";
+import { Statement } from "@/components/landing/statement";
 import { SmoothScroll } from "@/components/landing/smooth-scroll";
 import "./landing.css";
 
@@ -19,7 +20,7 @@ export default function Landing() {
       <SmoothScroll />
       <Hero />
       <main>
-        <section id="statement" aria-label="How Orbyn works, in four words" />
+        <Statement />
       </main>
     </div>
   );
