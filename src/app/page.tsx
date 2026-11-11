@@ -1,7 +1,19 @@
+import { Instrument_Serif } from "next/font/google";
 import { BadgeCheck, MessageSquareText, ShieldCheck, Workflow } from "lucide-react";
 import { startDemo } from "@/app/actions/auth";
 import { OrbynWordmark } from "@/components/brand/orbyn-mark";
+import { SmoothScroll } from "@/components/landing/smooth-scroll";
 import { StartDemoButton } from "@/components/landing/start-demo-button";
+import "./landing.css";
+
+// Display face for the landing page only. next/font self-hosts it and generates a size-adjusted
+// fallback, so the swap does not shift layout.
+const instrumentSerif = Instrument_Serif({
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-instrument-serif",
+});
 
 const STEPS = [
   { icon: MessageSquareText, title: "Intent", body: "Say what you need in plain language: invoice a client, chase a payment, check cash flow." },
@@ -12,7 +24,9 @@ const STEPS = [
 
 export default function Landing() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className={`landing ${instrumentSerif.variable} flex min-h-screen flex-col`}>
+      <div className="grain" aria-hidden />
+      <SmoothScroll />
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 md:px-8">
         <OrbynWordmark />
         <span className="text-xs text-muted-foreground">PayPal AI Hackathon · Sandbox build</span>

@@ -1,0 +1,103 @@
+/*
+ * Landing page only. Everything is scoped to .landing so app routes keep their own palette.
+ * Rules live in the components layer so Tailwind utilities can still override them.
+ */
+
+/* Paper behind the page, including overscroll, without touching the global body colour. */
+html:has(.landing) body {
+  background: #f6f3ee;
+}
+
+/* Lenis (smooth scrolling) needs these; it only runs when motion is allowed. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+@layer components {
+  .landing {
+    --paper: #f6f3ee;
+    --paper-deep: #ece7de;
+    --ink: #15131f;
+    --ink-soft: #5e596b; /* 6.3:1 on paper */
+    --ink-faint: #b9b3c2; /* decorative / not-yet-read words only */
+    --line: #dcd6cb;
+    --indigo: #3a2fa6;
+    --indigo-soft: #e6e2f6;
+
+    /* Re-point the app tokens so shared components (buttons, badges) pick up the landing palette. */
+    --background: var(--paper);
+    --foreground: var(--ink);
+    --card: #fffdf9;
+    --card-foreground: var(--ink);
+    --primary: var(--indigo);
+    --primary-foreground: #fffdf9;
+    --muted: var(--paper-deep);
+    --muted-foreground: var(--ink-soft);
+    --border: var(--line);
+    --ring: var(--indigo);
+
+    /* Type scale: fluid between 375px and 1440px. */
+    --step-wordmark: clamp(4.5rem, 21vw, 21rem);
+    --step-statement: clamp(2.75rem, 9.2vw, 9.5rem);
+    --step-display: clamp(2.5rem, 6.6vw, 6.5rem);
+    --step-headline: clamp(2rem, 4.3vw, 4.25rem);
+    --step-title: clamp(1.5rem, 2.6vw, 2.5rem);
+    --step-lead: clamp(1.0625rem, 1.25vw, 1.25rem);
+
+    --gutter: clamp(1.25rem, 4vw, 4rem);
+    --section-gap: clamp(6rem, 14vw, 13rem);
+
+    position: relative;
+    isolation: isolate;
+    background: var(--paper);
+    color: var(--ink);
+    overflow-x: clip;
+  }
+
+  .landing .font-display {
+    font-family: var(--font-instrument-serif), "Iowan Old Style", Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 1.02;
+  }
+
+  /* 12-column grid with fluid gutters. */
+  .landing .grid-12 {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: clamp(0.75rem, 1.6vw, 1.5rem);
+    padding-inline: var(--gutter);
+    max-width: 1680px;
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .landing ::selection {
+    background: var(--indigo);
+    color: #fffdf9;
+  }
+
+  .landing :focus-visible {
+    outline: 2px solid var(--indigo);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Film grain: one inline SVG noise tile, fixed, never intercepts input. */
+  .landing .grain {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0.07;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
