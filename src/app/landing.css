@@ -513,6 +513,82 @@ html.lenis body {
     }
   }
 
+  /* ---------- Playground ---------- */
+  .landing .playground {
+    padding-block: var(--section-gap);
+    border-top: 1px solid var(--line);
+  }
+  .landing .playground-input {
+    display: block;
+    width: 100%;
+    margin-top: 0.6rem;
+    padding: 0.2em 0 0.35em;
+    border: 0;
+    border-bottom: 1px solid var(--ink);
+    border-radius: 0;
+    background: transparent;
+    color: var(--ink);
+    font-size: clamp(1.75rem, 3.6vw, 3.25rem);
+    line-height: 1.12;
+    resize: none;
+    field-sizing: content;
+    min-height: 2.6em;
+  }
+  .landing .playground-input::placeholder {
+    color: var(--ink-faint);
+  }
+  .landing .playground-input:focus-visible {
+    outline: none;
+    border-bottom-color: var(--indigo);
+    box-shadow: 0 1px 0 var(--indigo);
+  }
+  .landing .playground-example {
+    margin-top: 1.4rem;
+    height: 2.75rem;
+    padding-inline: 1.25rem;
+    border: 1px solid var(--ink);
+    border-radius: 999px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+  .landing .playground-example:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .landing .playground-tag {
+    padding: 0.15rem 0.5rem;
+    border: 1px dashed var(--ink-soft);
+    border-radius: 0.3rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+  .landing .story-fields dd[data-empty] {
+    font-weight: 400;
+    color: var(--ink-soft);
+  }
+  .landing .playground-ask {
+    padding: 0.85rem 1.15rem;
+    border-top: 1px solid var(--line);
+    background: var(--indigo-soft);
+    font-size: 0.8125rem;
+  }
+  .landing .playground-ask ul {
+    margin-top: 0.3rem;
+    display: grid;
+    gap: 0.15rem;
+  }
+  .landing .playground-next {
+    padding: 0.85rem 1.15rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .landing .story-dots i,
     .landing .mask > span,
