@@ -419,17 +419,43 @@ html.lenis body {
   .landing .statement-line {
     display: block;
     white-space: nowrap;
+    overflow: clip;
+    padding-bottom: 0.14em;
+    margin-bottom: -0.14em;
+  }
+  .landing .statement-line [data-word] {
+    display: inline-block;
+  }
+  .landing .statement-line [data-word] + [data-word] {
+    margin-left: 0.22em;
   }
   /* Each line steps further in, so the four beats read as a descent. */
   @media (min-width: 768px) {
     .landing .statement-line[data-line="1"] {
-      margin-left: 12%;
+      margin-left: 14%;
     }
     .landing .statement-line[data-line="2"] {
-      margin-left: 24%;
+      margin-left: 28%;
     }
     .landing .statement-line[data-line="3"] {
-      margin-left: 36%;
+      margin-left: 42%;
+    }
+  }
+  /* Desktop with motion: overlap the last screen of the hero and hold while the lines arrive. */
+  @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+    .landing .statement {
+      position: relative;
+      z-index: 1;
+      height: 270vh;
+      margin-top: -100vh;
+      padding-block: 0;
+      pointer-events: none;
+    }
+    .landing .statement-stage {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      align-content: center;
     }
   }
 
@@ -695,8 +721,11 @@ html.lenis body {
       display: grid;
       gap: 1.1rem;
       /* Fixed-height slot: the card grows downward inside it instead of re-centring. */
-      min-height: 30rem;
+      min-height: 37rem;
       align-content: start;
+      padding: 6.5rem clamp(1.5rem, 3vw, 3rem) 2.5rem;
+      border-radius: 22rem 22rem 1.75rem 1.75rem;
+      background: linear-gradient(var(--indigo-soft), color-mix(in srgb, var(--indigo-soft) 35%, var(--paper)));
     }
     .landing .story-scene [data-block] {
       overflow: hidden;
@@ -705,8 +734,10 @@ html.lenis body {
 
   /* ---------- Playground ---------- */
   .landing .playground {
-    padding-block: var(--section-gap);
-    border-top: 1px solid var(--line);
+    margin-inline: clamp(0.5rem, 1.2vw, 1.25rem);
+    padding-block: clamp(4rem, 9vw, 8rem);
+    border-radius: 2rem;
+    background: var(--paper-deep);
   }
   .landing .playground-input {
     display: block;
@@ -781,8 +812,37 @@ html.lenis body {
 
   /* ---------- Trust ---------- */
   .landing .trust {
+    --ink: var(--paper);
+    --ink-soft: #cdc7e6;
+    --ink-faint: #7d76a6;
+    --line: rgb(226 219 255 / 0.2);
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    margin: clamp(0.5rem, 1.2vw, 1.25rem);
+    margin-bottom: 0;
     padding-block: var(--section-gap);
-    border-top: 1px solid var(--line);
+    border-radius: 2rem;
+    background: radial-gradient(90% 60% at 88% 108%, #6a5cd8 0%, #33288c 30%, #171240 62%, #0f0c24 100%);
+    color: var(--ink);
+  }
+  .landing .trust :focus-visible {
+    outline-color: var(--paper);
+  }
+  /* A sliver of the orb in the corner ties the panel back to the hero. */
+  .landing .trust::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    --o: clamp(10rem, 26vw, 24rem);
+    right: calc(var(--o) * -0.38);
+    bottom: calc(var(--o) * -0.54);
+    width: var(--o);
+    height: var(--o);
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 28%, #fffdf9 0%, var(--paper) 42%, #ddd6f3 80%, #b6abe8 100%);
+    box-shadow: 0 0 8rem 1rem rgb(170 156 250 / 0.4);
+    pointer-events: none;
   }
   .landing .trust-list {
     margin-top: clamp(2rem, 4vw, 3.5rem);
