@@ -1,4 +1,6 @@
 import { startDemo } from "@/app/actions/auth";
+import Link from "next/link";
+import { PillLink } from "./pill";
 import { StartDemoButton } from "./start-demo-button";
 
 export function Closing() {
@@ -7,12 +9,17 @@ export function Closing() {
       <div className="closing-orb" aria-hidden />
       <div className="grid-12">
         <h2 className="font-display col-span-12">Start with Orbyn</h2>
-        <form action={startDemo} className="col-span-12 mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 md:mt-14">
-          <StartDemoButton size="closing" label="Open the live demo" />
-          <p className="max-w-[40ch] text-[15px] leading-relaxed">
-            One click creates a private workspace with labelled demo data. No sign-up, and nothing real is charged.
-          </p>
-        </form>
+        <div className="col-span-12 mt-10 flex flex-wrap items-center justify-center gap-3 md:mt-14">
+          <PillLink href="/signup" size="closing">
+            Create account
+          </PillLink>
+          <form action={startDemo}>
+            <StartDemoButton size="closing" tone="ghost" />
+          </form>
+        </div>
+        <p className="closing-note col-span-12">
+          Free while Orbyn runs on the PayPal sandbox. The demo needs no sign-up, and nothing real is charged.
+        </p>
       </div>
     </section>
   );
@@ -26,14 +33,15 @@ export function Footer() {
           <a href="#story" className="nav-link">
             How it works
           </a>
-          <a href="#playground" className="nav-link">
-            Try it
-          </a>
-          <a href="#trust" className="nav-link">
-            Safeguards
-          </a>
-          <a href="#top" className="nav-link">
-            Back to top
+          <Link href="/login" className="nav-link">
+            Log in
+          </Link>
+          <Link href="/signup" className="nav-link">
+            Sign up
+          </Link>
+          {/* Placeholder: point this at the public repository once there is one. */}
+          <a href="https://github.com" className="nav-link" rel="noreferrer">
+            GitHub
           </a>
         </nav>
         <p className="col-span-12 mt-4 md:col-span-5 md:mt-0 md:text-right">PayPal AI Hackathon · Sandbox build</p>

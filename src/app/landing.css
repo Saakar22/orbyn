@@ -134,6 +134,19 @@ html.lenis body {
     align-items: center;
     height: 4.5rem;
   }
+  .landing .site-nav-cta a,
+  .landing .site-nav-cta button {
+    box-shadow: 0 6px 20px -8px rgb(15 12 36 / 0.45);
+  }
+  /* The text link lives in the blended layer, held clear of the button in the layer above. */
+  .landing .site-nav-account {
+    grid-column: 3;
+    justify-self: end;
+    margin-right: 9.25rem;
+  }
+  .landing .site-nav-account:empty {
+    display: none;
+  }
   .landing .site-nav-links {
     display: none;
     gap: 1.75rem;
@@ -147,6 +160,7 @@ html.lenis body {
   .landing .site-nav-link {
     display: inline-flex;
     align-items: center;
+    white-space: nowrap;
     gap: 0.45rem;
     padding-block: 0.35rem;
     opacity: 0.66;
@@ -174,10 +188,17 @@ html.lenis body {
     scale: 1;
   }
   .landing .site-nav-brand {
-    grid-column: 2;
+    grid-column: 1;
+    justify-self: start;
     font-size: 1.75rem;
     line-height: 1;
     letter-spacing: 0;
+  }
+  @media (min-width: 640px) {
+    .landing .site-nav-brand {
+      grid-column: 2;
+      justify-self: center;
+    }
   }
   .landing .hero :focus-visible,
   .landing .closing :focus-visible {
@@ -937,12 +958,12 @@ html.lenis body {
     font-size: var(--step-statement);
     line-height: 0.95;
   }
-  .landing .closing form {
-    justify-content: center;
-  }
-  .landing .closing form p {
+  .landing .closing-note {
+    max-width: 44ch;
+    margin: 1.5rem auto 0;
+    font-size: 0.9375rem;
+    line-height: 1.6;
     color: #d3cdea;
-    text-align: left;
   }
   .landing .closing-orb {
     position: absolute;

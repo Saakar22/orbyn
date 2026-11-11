@@ -56,7 +56,8 @@ export async function getSessionUserId() {
   return decodeSession(token);
 }
 
-async function loadContext() {
+/** The signed-in person and the workspace they own, or null. */
+export async function getAuthContext() {
   const userId = await getSessionUserId();
   if (!userId) return null;
   const user = await db.user.findUnique({ where: { id: userId }, include: { workspace: true } });
@@ -67,7 +68,7 @@ async function loadContext() {
 
 /** For pages: the signed-in person and the workspace they own. Redirects to the landing page without a session. */
 export async function requireWorkspace() {
-  const context = await loadContext();
+  const context = await getAuthContext();
   if (!context) redirect("/");
   return context;
 }
@@ -80,7 +81,7 @@ export class UnauthorizedError extends Error {
 
 /** For actions and route handlers: the caller's workspace id, or throw. Every query is scoped by it. */
 export async function requireWorkspaceId() {
-  const context = await loadContext();
+  const context = await getAuthContext();
   if (!context) throw new UnauthorizedError();
   return context.workspace.id;
 }
