@@ -3,6 +3,7 @@ import { BuilderNote } from "@/components/landing/builder-note";
 import { Closing, Footer } from "@/components/landing/closing";
 import { Hero } from "@/components/landing/hero";
 import { Playground } from "@/components/landing/playground";
+import { SiteNav } from "@/components/landing/site-nav";
 import { SmoothScroll } from "@/components/landing/smooth-scroll";
 import { Statement } from "@/components/landing/statement";
 import { Story } from "@/components/landing/story";
@@ -23,6 +24,7 @@ export default function Landing() {
     <div id="top" className={`landing ${instrumentSerif.variable}`}>
       <div className="grain" aria-hidden />
       <SmoothScroll />
+      <SiteNav />
       <Hero />
       <main>
         <Statement />

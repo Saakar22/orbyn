@@ -4,11 +4,12 @@ import { StartDemoButton } from "./start-demo-button";
 export function Closing() {
   return (
     <section id="start" className="closing">
+      <div className="closing-orb" aria-hidden />
       <div className="grid-12">
         <h2 className="font-display col-span-12">Start with Orbyn</h2>
         <form action={startDemo} className="col-span-12 mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 md:mt-14">
           <StartDemoButton size="closing" label="Open the live demo" />
-          <p className="max-w-[40ch] text-[15px] leading-relaxed text-[var(--ink-soft)]">
+          <p className="max-w-[40ch] text-[15px] leading-relaxed">
             One click creates a private workspace with labelled demo data. No sign-up, and nothing real is charged.
           </p>
         </form>
