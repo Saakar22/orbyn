@@ -52,3 +52,41 @@ describe("balance and display status", () => {
     expect(displayStatus({ status: "PAID", amountPaidMinor: 1000 })).toBe("PAID");
   });
 });
+
+describe("refund rules", () => {
+  const paid = { status: "COMPLETED", amountMinor: 50_000, refundedMinor: 0, captureId: "CAP-1" };
+
+  it("only completed PayPal captures are refundable, up to what is left", async () => {
+    const { refundableMinor } = await import("@/lib/payments");
+    expect(refundableMinor(paid)).toBe(50_000);
+    expect(refundableMinor({ ...paid, refundedMinor: 20_000 })).toBe(30_000);
+    expect(refundableMinor({ ...paid, captureId: null })).toBe(0); // seeded demo payment
+    expect(refundableMinor({ ...paid, status: "PENDING" })).toBe(0);
+    expect(refundableMinor({ ...paid, status: "REFUNDED", refundedMinor: 50_000 })).toBe(0);
+  });
+
+  it("rejects refunds above the refundable amount, zero and fractions of a cent", async () => {
+    const { checkRefundAmount } = await import("@/lib/payments");
+    expect(checkRefundAmount(30_000, 30_000).ok).toBe(true);
+    expect(checkRefundAmount(1, 30_000).ok).toBe(true);
+    expect(checkRefundAmount(30_001, 30_000).ok).toBe(false);
+    expect(checkRefundAmount(0, 30_000).ok).toBe(false);
+    expect(checkRefundAmount(10.5, 30_000).ok).toBe(false);
+    expect(checkRefundAmount(100, 0).ok).toBe(false);
+  });
+
+  it("reopens a paid invoice when a refund leaves a balance", async () => {
+    const { invoiceAfterRefund } = await import("@/lib/payments");
+    expect(invoiceAfterRefund({ totalMinor: 50_000, amountPaidMinor: 50_000, status: "PAID" }, 20_000)).toEqual({
+      amountPaidMinor: 30_000,
+      status: "PENDING",
+      reopened: true,
+    });
+    expect(invoiceAfterRefund({ totalMinor: 50_000, amountPaidMinor: 20_000, status: "OVERDUE" }, 20_000)).toEqual({
+      amountPaidMinor: 0,
+      status: "OVERDUE",
+      reopened: false,
+    });
+    expect(invoiceAfterRefund({ totalMinor: 50_000, amountPaidMinor: 100, status: "PENDING" }, 500).amountPaidMinor).toBe(0);
+  });
+});

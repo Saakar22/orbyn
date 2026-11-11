@@ -45,3 +45,29 @@ export function displayStatus(invoice: { status: string; amountPaidMinor: number
   }
   return invoice.status;
 }
+
+/** What can still be refunded on a payment. Only completed PayPal captures are refundable. */
+export function refundableMinor(txn: { status: string; amountMinor: number; refundedMinor: number; captureId: string | null }): number {
+  if (txn.status !== "COMPLETED" || !txn.captureId) return 0;
+  return Math.max(0, txn.amountMinor - txn.refundedMinor);
+}
+
+export function checkRefundAmount(amountMinor: number, refundable: number): AmountCheck {
+  if (refundable <= 0) return { ok: false, reason: "This payment can't be refunded." };
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) return { ok: false, reason: "Enter an amount greater than zero." };
+  if (amountMinor > refundable) return { ok: false, reason: "The amount is more than what's left to refund." };
+  return { ok: true };
+}
+
+/**
+ * Invoice state after `refundMinor` is returned to the payer. A paid invoice with a balance again
+ * reopens as PENDING (the due-date logic then shows it as overdue if it is past due).
+ */
+export function invoiceAfterRefund(
+  invoice: { totalMinor: number; amountPaidMinor: number; status: string },
+  refundMinor: number,
+): { amountPaidMinor: number; status: string; reopened: boolean } {
+  const amountPaidMinor = Math.max(0, invoice.amountPaidMinor - refundMinor);
+  const reopened = invoice.status === "PAID" && amountPaidMinor < invoice.totalMinor;
+  return { amountPaidMinor, status: reopened ? "PENDING" : invoice.status, reopened };
+}

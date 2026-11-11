@@ -2,6 +2,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { db } from "@/server/db";
 
 export const SESSION_COOKIE = "orbyn_session";
@@ -49,7 +50,10 @@ export async function clearSession() {
 }
 
 export async function getSessionUserId() {
-  return decodeSession((await cookies()).get(SESSION_COOKIE)?.value);
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  // Checking expiry reads the clock, so this must run at request time, never in a prerender/prefetch pass.
+  await connection();
+  return decodeSession(token);
 }
 
 /** For pages: redirect to the landing page if there is no valid session. */

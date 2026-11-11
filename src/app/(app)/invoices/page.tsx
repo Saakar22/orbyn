@@ -12,6 +12,9 @@ import { requireUser } from "@/server/session";
 
 export const metadata = { title: "Invoices" };
 
+// Reads the signed-in session, so navigation waits for the server by design (opts out of instant-navigation validation).
+export const instant = false;
+
 export default async function InvoicesPage({ searchParams }: PageProps<"/invoices">) {
   const user = await requireUser();
   const params = await searchParams;

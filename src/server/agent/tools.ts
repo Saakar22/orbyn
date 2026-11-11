@@ -112,6 +112,7 @@ export function createOrbynTools(userId: string) {
           transactions: invoice.transactions.map((t) => ({
             status: t.status,
             amountMinor: t.amountMinor,
+            refundedMinor: t.refundedMinor,
             captureId: t.captureId,
             source: t.source,
             createdAt: t.createdAt.toISOString(),

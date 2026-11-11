@@ -23,6 +23,9 @@ function Configured({ ok, label }: { ok: boolean; label: string }) {
   );
 }
 
+// Reads the signed-in session, so navigation waits for the server by design (opts out of instant-navigation validation).
+export const instant = false;
+
 export default async function SettingsPage() {
   const user = await requireUser();
   const paypalConfigured = Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);

@@ -127,6 +127,25 @@ export function getOrder(orderId: string) {
   return call<PayPalOrder>(`/v2/checkout/orders/${encodeURIComponent(orderId)}`, { method: "GET" });
 }
 
+export type PayPalRefund = {
+  id: string;
+  status: "COMPLETED" | "PENDING" | "CANCELLED" | "FAILED";
+  amount?: Money;
+  links?: { rel: string; href: string }[];
+};
+
+/** Refund part or all of a capture. The same requestId always yields the same refund. */
+export function refundCapture(captureId: string, input: { requestId: string; currency: string; value: string; note?: string }) {
+  return call<PayPalRefund>(`/v2/payments/captures/${encodeURIComponent(captureId)}/refund`, {
+    method: "POST",
+    requestId: input.requestId,
+    body: {
+      amount: { currency_code: input.currency, value: input.value },
+      ...(input.note ? { note_to_payer: input.note.slice(0, 255) } : {}),
+    },
+  });
+}
+
 /** Ask PayPal whether a webhook delivery is genuine. Requires PAYPAL_WEBHOOK_ID. */
 export async function verifyWebhookSignature(headers: Headers, event: unknown): Promise<boolean> {
   const webhookId = process.env.PAYPAL_WEBHOOK_ID;

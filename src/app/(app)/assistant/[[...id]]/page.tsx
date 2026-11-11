@@ -8,6 +8,9 @@ import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Assistant" };
 
+// Reads the signed-in session, so navigation waits for the server by design (opts out of instant-navigation validation).
+export const instant = false;
+
 export default async function AssistantPage({ params, searchParams }: PageProps<"/assistant/[[...id]]">) {
   const user = await requireUser();
   const [{ id }, query] = await Promise.all([params, searchParams]);

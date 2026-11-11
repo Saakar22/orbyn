@@ -7,6 +7,9 @@ import { requireUser } from "@/server/session";
 
 export const metadata = { title: "Transactions" };
 
+// Reads the signed-in session, so navigation waits for the server by design (opts out of instant-navigation validation).
+export const instant = false;
+
 export default async function TransactionsPage() {
   const user = await requireUser();
   const transactions = await getRecentTransactions(user.id, { limit: 25 });
@@ -54,6 +57,9 @@ export default async function TransactionsPage() {
                 </td>
                 <td className="tabular px-4 py-3 text-right font-medium">
                   {formatMoney(txn.amountMinor, txn.currency)} <span className="text-[11px] text-muted-foreground">{txn.currency}</span>
+                  {txn.refundedMinor > 0 && txn.status !== "REFUNDED" ? (
+                    <div className="text-[11px] font-normal text-muted-foreground">{formatMoney(txn.refundedMinor, txn.currency)} refunded</div>
+                  ) : null}
                 </td>
               </tr>
             ))}

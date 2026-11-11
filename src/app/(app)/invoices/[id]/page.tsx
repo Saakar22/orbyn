@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { cancelInvoiceAction } from "@/app/actions/invoices";
 import { CopyLinkButton } from "@/components/invoices/copy-link-button";
+import { RefundDialog } from "@/components/invoices/refund-dialog";
 import { ReminderActions } from "@/components/reminders/reminder-actions";
 import { ReminderForm } from "@/components/reminders/reminder-form";
 import { InvoiceDocument } from "@/components/invoices/invoice-document";
@@ -11,11 +12,14 @@ import { SourceBadge, StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { dateInputFromToday, daysUntil, formatDateTime } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
-import { balanceDue, displayStatus, isPayableStatus } from "@/lib/payments";
+import { balanceDue, displayStatus, isPayableStatus, refundableMinor } from "@/lib/payments";
 import { reminderDisplayStatus, reminderSubject, TONE_LABELS, type ReminderTone } from "@/lib/reminders";
 import { getInvoice } from "@/server/services/invoices";
 import { reminderTemplates } from "@/server/services/reminders";
 import { requireUser } from "@/server/session";
+
+// Reads the signed-in session, so navigation waits for the server by design (opts out of instant-navigation validation).
+export const instant = false;
 
 export default async function InvoiceDetailPage({ params }: PageProps<"/invoices/[id]">) {
   const user = await requireUser();
@@ -88,6 +92,26 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoices
                     {formatDateTime(txn.createdAt)}
                     {txn.captureId ? <span className="font-mono"> · {txn.captureId}</span> : null}
                   </div>
+                  {txn.refundedMinor > 0 && txn.status !== "REFUNDED" ? (
+                    <div className="text-[11px] text-muted-foreground">{formatMoney(txn.refundedMinor, txn.currency)} refunded</div>
+                  ) : null}
+                  {refundableMinor(txn) > 0 ? (
+                    <div className="mt-1 -ml-1.5">
+                      <RefundDialog
+                        transactionId={txn.id}
+                        invoiceId={invoice.id}
+                        currency={txn.currency}
+                        refundableMinor={refundableMinor(txn)}
+                        payerEmail={txn.payerEmail}
+                        invoice={{
+                          totalMinor: invoice.totalMinor,
+                          amountPaidMinor: invoice.amountPaidMinor,
+                          status: invoice.status,
+                          invoiceNumber: invoice.invoiceNumber,
+                        }}
+                      />
+                    </div>
+                  ) : null}
                 </li>
               ))}
               {invoice.orders.length === 0 && invoice.transactions.length === 0 ? (

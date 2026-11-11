@@ -10,10 +10,12 @@ import {
   PayPalError,
   type PayPalCapture,
   type PayPalOrder,
+  type PayPalRefund,
 } from "@/server/paypal/client";
 import { db } from "@/server/db";
 import { audit, type Actor } from "@/server/services/audit";
 import { effectiveStatus } from "@/server/services/invoices";
+import { captureIdFromRefund, recordRefund } from "@/server/services/refunds";
 import { cancelOpenReminders } from "@/server/services/reminders";
 
 /** An error whose message is safe to show to the person paying. */
@@ -256,6 +258,14 @@ export async function processWebhookEvent(event: WebhookEvent) {
     case "PAYMENT.CAPTURE.DECLINED":
       await recordCapture(event.resource as unknown as PayPalCapture, { actor: "paypal_webhook" });
       break;
+    case "PAYMENT.CAPTURE.REFUNDED":
+    case "PAYMENT.CAPTURE.REVERSED": {
+      // Covers refunds made in the PayPal dashboard, and pending refunds that clear later.
+      const refund = event.resource as unknown as PayPalRefund;
+      const captureId = captureIdFromRefund(refund);
+      if (captureId) await recordRefund({ ...refund, status: refund.status ?? "COMPLETED" }, { captureId, actor: "paypal_webhook" });
+      break;
+    }
     case "CHECKOUT.ORDER.APPROVED": {
       // The payer approved but the browser may have closed before capture. Capture here; the
       // shared PayPal-Request-Id makes this a no-op if the pay page already captured it.

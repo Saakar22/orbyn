@@ -20,6 +20,9 @@ const QUICK_ACTIONS = [
   "Summarize my financial activity this month",
 ];
 
+// Reads the signed-in session, so navigation waits for the server by design (opts out of instant-navigation validation).
+export const instant = false;
+
 export default async function DashboardPage() {
   const user = await requireUser();
   const [summary, monthly, outstanding, transactions, dueReminders] = await Promise.all([

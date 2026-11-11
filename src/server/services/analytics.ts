@@ -28,10 +28,11 @@ function periodRange(period: SummaryPeriod, now = new Date()) {
 async function revenueBetween(userId: string, start: Date, end: Date) {
   const result = await db.transaction.aggregate({
     where: { userId, status: "COMPLETED", createdAt: { gte: start, lt: end } },
-    _sum: { amountMinor: true },
+    _sum: { amountMinor: true, refundedMinor: true },
     _count: true,
   });
-  return { amountMinor: result._sum.amountMinor ?? 0, count: result._count };
+  // Revenue is net of refunds. Fully refunded payments have status REFUNDED and are excluded entirely.
+  return { amountMinor: (result._sum.amountMinor ?? 0) - (result._sum.refundedMinor ?? 0), count: result._count };
 }
 
 /** Outstanding = issued, unpaid invoices. Overdue = the subset past due. */
@@ -128,7 +129,7 @@ export async function getMonthlyRevenue(userId: string, months = 6) {
   const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
   const rows = await db.transaction.findMany({
     where: { userId, status: "COMPLETED", createdAt: { gte: start } },
-    select: { amountMinor: true, createdAt: true },
+    select: { amountMinor: true, refundedMinor: true, createdAt: true },
   });
   const buckets = Array.from({ length: months }, (_, i) => {
     const date = new Date(start.getFullYear(), start.getMonth() + i, 1);
@@ -136,7 +137,7 @@ export async function getMonthlyRevenue(userId: string, months = 6) {
   });
   for (const row of rows) {
     const bucket = buckets.find((b) => b.key === `${row.createdAt.getFullYear()}-${row.createdAt.getMonth()}`);
-    if (bucket) bucket.revenueMinor += row.amountMinor;
+    if (bucket) bucket.revenueMinor += row.amountMinor - row.refundedMinor;
   }
   return buckets.map(({ month, revenueMinor }) => ({ month, revenueMinor }));
 }
@@ -154,6 +155,7 @@ export async function getRecentTransactions(userId: string, raw: z.input<typeof 
   return rows.map((row) => ({
     id: row.id,
     amountMinor: row.amountMinor,
+    refundedMinor: row.refundedMinor,
     currency: row.currency,
     status: row.status,
     source: row.source,

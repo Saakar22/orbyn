@@ -6,6 +6,9 @@ import { requireUser } from "@/server/session";
 
 export const metadata = { title: "New invoice" };
 
+// Reads the signed-in session, so navigation waits for the server by design (opts out of instant-navigation validation).
+export const instant = false;
+
 export default async function NewInvoicePage() {
   const user = await requireUser();
   const clients = await db.client.findMany({
