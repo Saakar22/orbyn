@@ -54,6 +54,15 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --shadow-raised: var(--elevation-1);
+  --shadow-overlay: var(--elevation-2);
+  --shadow-modal: var(--elevation-3);
+  --ease-out-soft: var(--ease-out);
+  --ease-in-out-soft: var(--ease-in-out);
+  --text-display: var(--type-display);
+  --text-title: var(--type-title);
+  --text-heading: var(--type-heading);
 }
 
 :root {
@@ -93,6 +102,27 @@
   --chart-4: oklch(0.6 0.11 200);
   --chart-5: oklch(0.82 0.06 292);
 
+  /* Spacing: a 4px base. Use the Tailwind scale (1 = 4px); these name the steps layouts rely on. */
+  --space-gutter: clamp(1rem, 0.6rem + 1.8vw, 2rem);
+  --space-section: clamp(1.5rem, 1.1rem + 1.6vw, 2.5rem);
+
+  /* Elevation: tinted with the ink colour so shadows sit in the palette instead of going grey. */
+  --elevation-1: 0 1px 2px oklch(0.22 0.03 272 / 6%), 0 1px 1px oklch(0.22 0.03 272 / 4%);
+  --elevation-2: 0 4px 14px -2px oklch(0.22 0.03 272 / 10%), 0 2px 4px oklch(0.22 0.03 272 / 5%);
+  --elevation-3: 0 18px 48px -12px oklch(0.22 0.03 272 / 22%), 0 6px 14px oklch(0.22 0.03 272 / 8%);
+
+  /* Motion */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 420ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Type scale. App UI stays compact; only page titles and display figures flex with the viewport. */
+  --type-display: clamp(1.75rem, 1.35rem + 1.6vw, 2.5rem);
+  --type-title: clamp(1.25rem, 1.15rem + 0.45vw, 1.5rem);
+  --type-heading: 0.9375rem;
+
   --sidebar: oklch(0.19 0.035 272);
   --sidebar-foreground: oklch(0.8 0.02 272);
   --sidebar-primary: oklch(0.99 0 0);
@@ -118,5 +148,17 @@
   }
   .tabular {
     font-variant-numeric: tabular-nums;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
