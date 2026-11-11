@@ -16,20 +16,20 @@ import { balanceDue, displayStatus, isPayableStatus, refundableMinor } from "@/l
 import { reminderDisplayStatus, reminderSubject, TONE_LABELS, type ReminderTone } from "@/lib/reminders";
 import { getInvoice } from "@/server/services/invoices";
 import { reminderTemplates } from "@/server/services/reminders";
-import { requireUser } from "@/server/session";
+import { requireWorkspace } from "@/server/session";
 
 // Reads the signed-in session, so navigation waits for the server by design (opts out of instant-navigation validation).
 export const instant = false;
 
 export default async function InvoiceDetailPage({ params }: PageProps<"/invoices/[id]">) {
-  const user = await requireUser();
+  const { user, workspace } = await requireWorkspace();
   const { id } = await params;
-  const invoice = await getInvoice(user.id, { id });
+  const invoice = await getInvoice(workspace.id, { id });
   if (!invoice) notFound();
 
   const payable = isPayableStatus(invoice.status) && balanceDue(invoice) > 0;
   const payPath = `/pay/${invoice.publicToken}`;
-  const templates = payable ? await reminderTemplates(user.id, invoice.id) : null;
+  const templates = payable ? await reminderTemplates(workspace.id, invoice.id) : null;
 
   return (
     <PageContainer>
@@ -63,7 +63,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoices
           invoice={{
             ...invoice,
             status: displayStatus(invoice),
-            issuer: { name: user.name, businessName: user.businessName, email: user.email },
+            issuer: { name: user.name, businessName: workspace.name, email: user.email },
           }}
         />
 

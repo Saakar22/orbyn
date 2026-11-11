@@ -1,7 +1,7 @@
 import { CheckCircle2, CircleDashed } from "lucide-react";
 import type { ReactNode } from "react";
 import { PageContainer, PageHeader } from "@/components/page-header";
-import { requireUser } from "@/server/session";
+import { requireWorkspace } from "@/server/session";
 
 export const metadata = { title: "Settings" };
 
@@ -27,7 +27,7 @@ function Configured({ ok, label }: { ok: boolean; label: string }) {
 export const instant = false;
 
 export default async function SettingsPage() {
-  const user = await requireUser();
+  const { user, workspace } = await requireWorkspace();
   const paypalConfigured = Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
   const sandbox = process.env.PAYPAL_ENV === "sandbox" && (process.env.PAYPAL_BASE_URL ?? "").includes("sandbox");
 
@@ -37,9 +37,9 @@ export default async function SettingsPage() {
       <section className="max-w-2xl overflow-hidden rounded-lg border bg-card text-[13px]">
         <h2 className="border-b bg-muted/40 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Profile</h2>
         <Row label="Name">{user.name}</Row>
-        <Row label="Business">{user.businessName ?? "—"}</Row>
+        <Row label="Business">{workspace.name}</Row>
         <Row label="Email">{user.email}</Row>
-        <Row label="Default currency">{user.defaultCurrency}</Row>
+        <Row label="Default currency">{workspace.currency}</Row>
       </section>
       <section className="max-w-2xl overflow-hidden rounded-lg border bg-card text-[13px]">
         <h2 className="border-b bg-muted/40 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Integrations</h2>

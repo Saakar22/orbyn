@@ -56,12 +56,20 @@ export async function getSessionUserId() {
   return decodeSession(token);
 }
 
-/** For pages: redirect to the landing page if there is no valid session. */
-export async function requireUser() {
+async function loadContext() {
   const userId = await getSessionUserId();
-  const user = userId ? await db.user.findUnique({ where: { id: userId } }) : null;
-  if (!user) redirect("/");
-  return user;
+  if (!userId) return null;
+  const user = await db.user.findUnique({ where: { id: userId }, include: { workspace: true } });
+  if (!user?.workspace) return null;
+  const { workspace, ...person } = user;
+  return { user: person, workspace };
+}
+
+/** For pages: the signed-in person and the workspace they own. Redirects to the landing page without a session. */
+export async function requireWorkspace() {
+  const context = await loadContext();
+  if (!context) redirect("/");
+  return context;
 }
 
 export class UnauthorizedError extends Error {
@@ -70,9 +78,9 @@ export class UnauthorizedError extends Error {
   }
 }
 
-/** For route handlers: throw instead of redirecting. */
-export async function requireUserId() {
-  const userId = await getSessionUserId();
-  if (!userId) throw new UnauthorizedError();
-  return userId;
+/** For actions and route handlers: the caller's workspace id, or throw. Every query is scoped by it. */
+export async function requireWorkspaceId() {
+  const context = await loadContext();
+  if (!context) throw new UnauthorizedError();
+  return context.workspace.id;
 }

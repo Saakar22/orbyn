@@ -3,12 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { buildInvoiceDraft, createInvoiceInput, saveInvoiceDraft, setInvoiceStatus } from "@/server/services/invoices";
-import { requireUserId } from "@/server/session";
+import { requireWorkspaceId } from "@/server/session";
 
 export type CreateInvoiceState = { error?: string } | undefined;
 
 export async function createInvoiceAction(_prev: CreateInvoiceState, formData: FormData): Promise<CreateInvoiceState> {
-  const userId = await requireUserId();
+  const workspaceId = await requireWorkspaceId();
   let items: unknown;
   try {
     items = JSON.parse(String(formData.get("items") ?? "[]"));
@@ -31,15 +31,15 @@ export async function createInvoiceAction(_prev: CreateInvoiceState, formData: F
     return { error: `${issue.path.join(".") || "Invoice"}: ${issue.message}` };
   }
 
-  const draft = await buildInvoiceDraft(userId, parsed.data);
-  const invoice = await saveInvoiceDraft(userId, draft, "user");
+  const draft = await buildInvoiceDraft(workspaceId, parsed.data);
+  const invoice = await saveInvoiceDraft(workspaceId, draft, "user");
   revalidatePath("/invoices");
   redirect(`/invoices/${invoice.id}`);
 }
 
 export async function cancelInvoiceAction(invoiceId: string) {
-  const userId = await requireUserId();
-  await setInvoiceStatus(userId, invoiceId, "CANCELLED", "user");
+  const workspaceId = await requireWorkspaceId();
+  await setInvoiceStatus(workspaceId, invoiceId, "CANCELLED", "user");
   revalidatePath(`/invoices/${invoiceId}`);
   revalidatePath("/invoices");
 }

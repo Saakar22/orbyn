@@ -8,7 +8,7 @@ import { describeDue, formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
 import { balanceDue, displayStatus } from "@/lib/payments";
 import { listInvoices, listInvoicesInput } from "@/server/services/invoices";
-import { requireUser } from "@/server/session";
+import { requireWorkspace } from "@/server/session";
 
 export const metadata = { title: "Invoices" };
 
@@ -16,13 +16,13 @@ export const metadata = { title: "Invoices" };
 export const instant = false;
 
 export default async function InvoicesPage({ searchParams }: PageProps<"/invoices">) {
-  const user = await requireUser();
+  const { workspace } = await requireWorkspace();
   const params = await searchParams;
   const filters = listInvoicesInput.safeParse({
     status: typeof params.status === "string" && params.status ? params.status : undefined,
     query: typeof params.q === "string" && params.q ? params.q : undefined,
   });
-  const invoices = await listInvoices(user.id, filters.success ? filters.data : {});
+  const invoices = await listInvoices(workspace.id, filters.success ? filters.data : {});
 
   return (
     <PageContainer>

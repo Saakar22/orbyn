@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { toMinor } from "@/lib/money";
 import { completePayment, PaymentError, startPayment, type PaymentOutcome } from "@/server/services/payments";
 import { RefundError, refundPayment, type RefundOutcome } from "@/server/services/refunds";
-import { requireUserId } from "@/server/session";
+import { requireWorkspaceId } from "@/server/session";
 
 type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
@@ -48,7 +48,7 @@ export async function refundPaymentAction(
   amount: string,
   reason: string,
 ): Promise<Result<RefundOutcome>> {
-  const userId = await requireUserId();
+  const workspaceId = await requireWorkspaceId();
   let amountMinor: number;
   try {
     amountMinor = toMinor(String(amount));
@@ -56,7 +56,7 @@ export async function refundPaymentAction(
     return { ok: false, error: "Enter a valid amount, like 250 or 250.50." };
   }
   try {
-    const outcome = await refundPayment(userId, String(transactionId), amountMinor, String(reason).trim() || undefined);
+    const outcome = await refundPayment(workspaceId, String(transactionId), amountMinor, String(reason).trim() || undefined);
     if (invoiceId) revalidatePath(`/invoices/${invoiceId}`);
     for (const path of ["/invoices", "/transactions", "/dashboard"]) revalidatePath(path);
     return { ok: true, value: outcome };

@@ -25,9 +25,9 @@ function periodRange(period: SummaryPeriod, now = new Date()) {
   }
 }
 
-async function revenueBetween(userId: string, start: Date, end: Date) {
+async function revenueBetween(workspaceId: string, start: Date, end: Date) {
   const result = await db.transaction.aggregate({
-    where: { userId, status: "COMPLETED", createdAt: { gte: start, lt: end } },
+    where: { workspaceId, status: "COMPLETED", createdAt: { gte: start, lt: end } },
     _sum: { amountMinor: true, refundedMinor: true },
     _count: true,
   });
@@ -36,10 +36,10 @@ async function revenueBetween(userId: string, start: Date, end: Date) {
 }
 
 /** Outstanding = issued, unpaid invoices. Overdue = the subset past due. */
-export async function getOutstanding(userId: string) {
+export async function getOutstanding(workspaceId: string) {
   const now = new Date();
   const rows = await db.invoice.findMany({
-    where: { userId, status: { in: ["PENDING", "OVERDUE"] } },
+    where: { workspaceId, status: { in: ["PENDING", "OVERDUE"] } },
     select: {
       id: true,
       invoiceNumber: true,
@@ -72,15 +72,15 @@ export async function getOutstanding(userId: string) {
   };
 }
 
-export async function getFinancialSummary(userId: string, raw: z.input<typeof summaryInput> = {}) {
+export async function getFinancialSummary(workspaceId: string, raw: z.input<typeof summaryInput> = {}) {
   const { period } = summaryInput.parse(raw);
   const range = periodRange(period);
   const [current, previous, outstanding, paidInPeriod, issuedInPeriod] = await Promise.all([
-    revenueBetween(userId, range.start, range.end),
-    revenueBetween(userId, range.prevStart, range.prevEnd),
-    getOutstanding(userId),
-    db.invoice.count({ where: { userId, status: "PAID", paidAt: { gte: range.start, lt: range.end } } }),
-    db.invoice.count({ where: { userId, status: { not: "DRAFT" }, issueDate: { gte: range.start, lt: range.end } } }),
+    revenueBetween(workspaceId, range.start, range.end),
+    revenueBetween(workspaceId, range.prevStart, range.prevEnd),
+    getOutstanding(workspaceId),
+    db.invoice.count({ where: { workspaceId, status: "PAID", paidAt: { gte: range.start, lt: range.end } } }),
+    db.invoice.count({ where: { workspaceId, status: { not: "DRAFT" }, issueDate: { gte: range.start, lt: range.end } } }),
   ]);
 
   const change = previous.amountMinor > 0 ? (current.amountMinor - previous.amountMinor) / previous.amountMinor : null;
@@ -104,9 +104,9 @@ export async function getFinancialSummary(userId: string, raw: z.input<typeof su
   };
 }
 
-export async function getOverdueInvoices(userId: string) {
+export async function getOverdueInvoices(workspaceId: string) {
   const now = Date.now();
-  const { unpaid } = await getOutstanding(userId);
+  const { unpaid } = await getOutstanding(workspaceId);
   return unpaid
     .filter((invoice) => invoice.dueDate.getTime() < now)
     .map((invoice) => ({
@@ -124,11 +124,11 @@ export async function getOverdueInvoices(userId: string) {
 }
 
 /** Completed revenue per calendar month, oldest first, for the dashboard chart. */
-export async function getMonthlyRevenue(userId: string, months = 6) {
+export async function getMonthlyRevenue(workspaceId: string, months = 6) {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
   const rows = await db.transaction.findMany({
-    where: { userId, status: "COMPLETED", createdAt: { gte: start } },
+    where: { workspaceId, status: "COMPLETED", createdAt: { gte: start } },
     select: { amountMinor: true, refundedMinor: true, createdAt: true },
   });
   const buckets = Array.from({ length: months }, (_, i) => {
@@ -144,10 +144,10 @@ export async function getMonthlyRevenue(userId: string, months = 6) {
 
 export const recentTransactionsInput = z.object({ limit: z.number().int().min(1).max(25).default(5) });
 
-export async function getRecentTransactions(userId: string, raw: z.input<typeof recentTransactionsInput> = {}) {
+export async function getRecentTransactions(workspaceId: string, raw: z.input<typeof recentTransactionsInput> = {}) {
   const { limit } = recentTransactionsInput.parse(raw);
   const rows = await db.transaction.findMany({
-    where: { userId },
+    where: { workspaceId },
     orderBy: { createdAt: "desc" },
     take: limit,
     include: { invoice: { select: { invoiceNumber: true, client: { select: { name: true } } } } },

@@ -1,9 +1,9 @@
 import { LogOut } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
-import { requireUser } from "@/server/session";
+import { requireWorkspace } from "@/server/session";
 
 export async function UserBlock() {
-  const user = await requireUser();
+  const { user, workspace } = await requireWorkspace();
   const initials = user.name
     .split(" ")
     .map((part) => part[0])
@@ -17,7 +17,7 @@ export async function UserBlock() {
       </div>
       <div className="min-w-0 flex-1 leading-tight">
         <div className="truncate text-[13px] font-medium text-sidebar-accent-foreground">{user.name}</div>
-        <div className="truncate text-[11px] text-sidebar-foreground/70">{user.businessName ?? user.email}</div>
+        <div className="truncate text-[11px] text-sidebar-foreground/70">{workspace.name}</div>
       </div>
       <form action={signOut}>
         <button

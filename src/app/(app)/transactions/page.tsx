@@ -3,7 +3,7 @@ import { SourceBadge, StatusBadge } from "@/components/status-badge";
 import { formatDateTime } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
 import { getRecentTransactions } from "@/server/services/analytics";
-import { requireUser } from "@/server/session";
+import { requireWorkspace } from "@/server/session";
 
 export const metadata = { title: "Transactions" };
 
@@ -11,8 +11,8 @@ export const metadata = { title: "Transactions" };
 export const instant = false;
 
 export default async function TransactionsPage() {
-  const user = await requireUser();
-  const transactions = await getRecentTransactions(user.id, { limit: 25 });
+  const { workspace } = await requireWorkspace();
+  const transactions = await getRecentTransactions(workspace.id, { limit: 25 });
 
   return (
     <PageContainer>

@@ -10,7 +10,7 @@ import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { getFinancialSummary, getMonthlyRevenue, getOutstanding, getRecentTransactions } from "@/server/services/analytics";
 import { listDueReminders } from "@/server/services/reminders";
-import { requireUser } from "@/server/session";
+import { requireWorkspace } from "@/server/session";
 
 export const metadata = { title: "Dashboard" };
 
@@ -24,13 +24,13 @@ const QUICK_ACTIONS = [
 export const instant = false;
 
 export default async function DashboardPage() {
-  const user = await requireUser();
+  const { user, workspace } = await requireWorkspace();
   const [summary, monthly, outstanding, transactions, dueReminders] = await Promise.all([
-    getFinancialSummary(user.id, { period: "this_month" }),
-    getMonthlyRevenue(user.id, 6),
-    getOutstanding(user.id),
-    getRecentTransactions(user.id, { limit: 6 }),
-    listDueReminders(user.id),
+    getFinancialSummary(workspace.id, { period: "this_month" }),
+    getMonthlyRevenue(workspace.id, 6),
+    getOutstanding(workspace.id),
+    getRecentTransactions(workspace.id, { limit: 6 }),
+    listDueReminders(workspace.id),
   ]);
   const up = (summary.revenueChangePct ?? 0) >= 0;
 

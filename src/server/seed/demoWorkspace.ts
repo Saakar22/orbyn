@@ -72,11 +72,22 @@ const INVOICES: SeedInvoice[] = [
   { client: 1, service: 7, quantity: 4, issuedDaysAgo: 60, termDays: 14, status: "CANCELLED" },
 ];
 
-export async function seedDemoWorkspace(db: PrismaClient, userId: string) {
+/** Spread seeded records across the working day so they don't all share one timestamp. */
+function atWorkingHour(time: number, salt: number) {
+  const date = new Date(time);
+  date.setHours(8 + ((salt * 7) % 10), (salt * 23 + 11) % 60, (salt * 37) % 60, 0);
+  return date;
+}
+
+function earlier(date: Date, limit: number) {
+  return date.getTime() > limit ? new Date(limit - 5 * 60_000) : date;
+}
+
+export async function seedDemoWorkspace(db: PrismaClient, workspaceId: string) {
   const now = Date.now();
 
   const clients = await Promise.all(
-    CLIENTS.map((client) => db.client.create({ data: { ...client, userId, source: "SEEDED" } })),
+    CLIENTS.map((client) => db.client.create({ data: { ...client, workspaceId, source: "SEEDED" } })),
   );
 
   // Oldest first so invoice numbers increase with issue date.
@@ -85,12 +96,15 @@ export async function seedDemoWorkspace(db: PrismaClient, userId: string) {
     const service = SERVICES[seed.service];
     const items = [{ description: service.description, quantity: seed.quantity, unitPriceMinor: service.unit }];
     const totals = computeTotals(items);
-    const issueDate = new Date(now - seed.issuedDaysAgo * DAY_MS);
-    const paidAt = seed.paidAfterDays !== undefined ? new Date(issueDate.getTime() + seed.paidAfterDays * DAY_MS) : null;
+    const issueDate = atWorkingHour(now - seed.issuedDaysAgo * DAY_MS, index * 2);
+    const paidAt =
+      seed.paidAfterDays !== undefined
+        ? earlier(atWorkingHour(issueDate.getTime() + seed.paidAfterDays * DAY_MS, index * 2 + 1), now)
+        : null;
 
     await db.invoice.create({
       data: {
-        userId,
+        workspaceId,
         clientId: clients[seed.client].id,
         invoiceNumber: `INV-${String(index + 1).padStart(4, "0")}`,
         description: service.description,
@@ -112,7 +126,7 @@ export async function seedDemoWorkspace(db: PrismaClient, userId: string) {
         transactions: paidAt
           ? {
               create: {
-                userId,
+                workspaceId,
                 amountMinor: totals.totalMinor,
                 currency: "USD",
                 status: "COMPLETED",
@@ -127,18 +141,23 @@ export async function seedDemoWorkspace(db: PrismaClient, userId: string) {
   }
 
   await db.auditLog.create({
-    data: { userId, actor: "system", action: "workspace.seeded", entityType: "User", entityId: userId },
+    data: { workspaceId, actor: "system", action: "workspace.seeded", entityType: "Workspace", entityId: workspaceId },
   });
 }
 
+/** A guest (no password) who owns a seeded demo workspace. Created by "Try the live demo". */
 export async function createDemoUser(db: PrismaClient) {
+  const now = new Date();
   const user = await db.user.create({
     data: {
       name: "Maya Chen",
       email: `demo+${randomBytes(6).toString("hex")}@orbyn.app`,
-      businessName: "Chen Studio",
+      isGuest: true,
+      onboardedAt: now,
+      workspace: { create: { name: "Chen Studio", isDemo: true } },
     },
+    include: { workspace: true },
   });
-  await seedDemoWorkspace(db, user.id);
+  await seedDemoWorkspace(db, user.workspace!.id);
   return user;
 }

@@ -19,9 +19,9 @@ const REFUND_STATUS: Record<PayPalRefund["status"], RefundStatus> = {
 export type RefundOutcome = { state: "refunded" | "pending" | "failed"; amountMinor: number; currency: string; invoiceReopened: boolean };
 
 /** Owner-initiated refund of part or all of a PayPal payment. */
-export async function refundPayment(userId: string, transactionId: string, amountMinor: number, reason?: string): Promise<RefundOutcome> {
+export async function refundPayment(workspaceId: string, transactionId: string, amountMinor: number, reason?: string): Promise<RefundOutcome> {
   const txn = await db.transaction.findFirst({
-    where: { id: transactionId, userId },
+    where: { id: transactionId, workspaceId },
     include: { refunds: { where: { status: "PENDING" } } },
   });
   if (!txn) throw new RefundError("Payment not found.");
@@ -112,7 +112,7 @@ export async function recordRefund(
       if (!existing || existing.status !== status) {
         await audit(
           {
-            userId: txn.userId,
+            workspaceId: txn.workspaceId,
             actor: ctx.actor,
             action: `refund.${status.toLowerCase()}`,
             entityType: txn.invoiceId ? "Invoice" : "Transaction",

@@ -28,7 +28,7 @@ export async function getInvoiceForPayer(publicToken: string) {
     include: {
       client: true,
       items: { orderBy: { position: "asc" } },
-      user: { select: { name: true, businessName: true, email: true } },
+      workspace: { select: { name: true, owner: { select: { name: true, email: true } } } },
     },
   });
   if (!invoice || invoice.status === "DRAFT") return null;
@@ -48,7 +48,7 @@ export async function startPayment(publicToken: string, amountMinor: number) {
   const order = await createOrder({
     requestId,
     invoiceId: invoice.id,
-    description: `${invoice.invoiceNumber} · ${invoice.user.businessName ?? invoice.user.name}`,
+    description: `${invoice.invoiceNumber} · ${invoice.workspace.name}`,
     currency: invoice.currency,
     value: toPayPalValue(amountMinor),
   });
@@ -66,7 +66,7 @@ export async function startPayment(publicToken: string, amountMinor: number) {
     });
     await audit(
       {
-        userId: invoice.userId,
+        workspaceId: invoice.workspaceId,
         actor: "system",
         action: "payment.order_created",
         entityType: "Invoice",
@@ -170,7 +170,7 @@ export async function recordCapture(
       } else {
         await tx.transaction.create({
           data: {
-            userId: invoice.userId,
+            workspaceId: invoice.workspaceId,
             invoiceId,
             paypalOrderId: paypalOrderId ?? null,
             captureId: capture.id,
@@ -203,7 +203,7 @@ export async function recordCapture(
       if (!existing || existing.status !== status) {
         await audit(
           {
-            userId: invoice.userId,
+            workspaceId: invoice.workspaceId,
             actor: ctx.actor,
             action: `payment.${status.toLowerCase()}`,
             entityType: "Invoice",

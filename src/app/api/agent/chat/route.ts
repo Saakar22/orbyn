@@ -19,16 +19,16 @@ import { buildInstructions } from "@/server/agent/instructions";
 import { createOrbynTools, type OrbynUIMessage } from "@/server/agent/tools";
 import { db } from "@/server/db";
 import { audit } from "@/server/services/audit";
-import { requireUserId, UnauthorizedError } from "@/server/session";
+import { requireWorkspaceId, UnauthorizedError } from "@/server/session";
 
 export const maxDuration = 60;
 
 const body = z.object({ id: z.string().min(1), message: z.unknown() });
 
 export async function POST(request: Request) {
-  let userId: string;
+  let workspaceId: string;
   try {
-    userId = await requireUserId();
+    workspaceId = await requireWorkspaceId();
   } catch (error) {
     if (error instanceof UnauthorizedError) return Response.json({ error: "Unauthorized" }, { status: 401 });
     throw error;
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   const parsed = body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Invalid request" }, { status: 400 });
 
-  const conversation = await getConversation(userId, parsed.data.id);
+  const conversation = await getConversation(workspaceId, parsed.data.id);
   if (!conversation) return Response.json({ error: "Conversation not found" }, { status: 404 });
 
   let merged: ReturnType<typeof mergeClientMessage>;
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
 
   for (const decision of merged.decisions) {
     await audit({
-      userId,
+      workspaceId,
       actor: "user",
       action: decision.approved ? "agent.approval.granted" : "agent.approval.denied",
       entityType: "AgentToolCall",
@@ -59,19 +59,19 @@ export async function POST(request: Request) {
     });
   }
 
-  const tools = createOrbynTools(userId);
+  const tools = createOrbynTools(workspaceId);
   const messages = await validateUIMessages<OrbynUIMessage>({ messages: merged.messages, tools });
 
-  const [user, clients] = await Promise.all([
-    db.user.findUniqueOrThrow({ where: { id: userId } }),
-    db.client.findMany({ where: { userId }, select: { name: true }, orderBy: { name: "asc" } }),
+  const [workspace, clients] = await Promise.all([
+    db.workspace.findUniqueOrThrow({ where: { id: workspaceId }, include: { owner: { select: { name: true } } } }),
+    db.client.findMany({ where: { workspaceId }, select: { name: true }, orderBy: { name: "asc" } }),
   ]);
 
   const result = streamText({
     model: google(process.env.GEMINI_MODEL || "gemini-flash-latest"),
     instructions: buildInstructions({
-      userName: user.name,
-      businessName: user.businessName,
+      userName: workspace.owner.name,
+      businessName: workspace.name,
       clientNames: clients.map((c) => c.name),
       now: new Date(),
     }),
