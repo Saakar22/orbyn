@@ -1,5 +1,6 @@
 import { Instrument_Serif } from "next/font/google";
 import { Hero } from "@/components/landing/hero";
+import { Story } from "@/components/landing/story";
 import { Statement } from "@/components/landing/statement";
 import { SmoothScroll } from "@/components/landing/smooth-scroll";
 import "./landing.css";
@@ -21,6 +22,7 @@ export default function Landing() {
       <Hero />
       <main>
         <Statement />
+        <Story />
       </main>
     </div>
   );

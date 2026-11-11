@@ -243,7 +243,278 @@ html.lenis body {
     }
   }
 
+  /* ---------- Story ---------- */
+  .landing .story {
+    padding-top: clamp(2rem, 6vw, 6rem);
+  }
+
+  /* Default (phones, reduced motion): stacked list. The pinned stage is off. */
+  .landing .story-pin {
+    display: none;
+  }
+  .landing .story-stack {
+    row-gap: clamp(3rem, 9vw, 5rem);
+    padding-block: clamp(2.5rem, 7vw, 5rem) var(--section-gap);
+    list-style: none;
+  }
+  .landing .story-stack > li {
+    display: grid;
+    gap: 1.25rem;
+  }
+  @media (min-width: 768px) {
+    .landing .story-stack > li {
+      grid-template-columns: 5fr 7fr;
+      gap: 3rem;
+      align-items: start;
+    }
+  }
+  .landing .story-stack-label {
+    display: flex;
+    gap: 1rem;
+  }
+  .landing .story-stack-label h3,
+  .landing .story-steps h3 {
+    font-size: var(--step-title);
+    line-height: 1.05;
+  }
+  .landing .story-stack-label p,
+  .landing .story-steps p {
+    margin-top: 0.5rem;
+    max-width: 36ch;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+  .landing .story-step-num {
+    padding-top: 0.45em;
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+  }
+
+  /* Card pieces, shared by both layouts. */
+  .landing .story-bubble {
+    width: fit-content;
+    max-width: 100%;
+    margin-left: auto;
+    padding: 0.8rem 1.15rem;
+    border-radius: 1.25rem 1.25rem 0.3rem 1.25rem;
+    background: var(--ink);
+    color: #fffdf9;
+    font-size: clamp(0.9375rem, 1.2vw, 1.0625rem);
+    line-height: 1.4;
+  }
+  .landing .story-card {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 0.875rem;
+    background: var(--card);
+    font-size: 0.875rem;
+    box-shadow:
+      0 1px 0 #fff inset,
+      0 30px 60px -38px rgb(21 19 31 / 0.35);
+  }
+  .landing .story-thinking {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 1.15rem;
+    color: var(--ink-soft);
+  }
+  .landing .story-dots {
+    display: inline-flex;
+    gap: 0.25rem;
+  }
+  .landing .story-dots i {
+    width: 0.3rem;
+    height: 0.3rem;
+    border-radius: 50%;
+    background: var(--indigo);
+    animation: landing-dot 1.2s ease-in-out infinite;
+  }
+  .landing .story-dots i:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+  .landing .story-dots i:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  .landing .story-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.8rem 1.15rem;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--paper) 55%, var(--card));
+  }
+  .landing .story-badges {
+    display: grid;
+    justify-items: end;
+  }
+  .landing .story-badges > span {
+    grid-area: 1 / 1;
+  }
+  .landing .story-fields > div {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: 1rem;
+    padding: 0.7rem 1.15rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  }
+  .landing .story-fields > div:last-child {
+    border-bottom: 0;
+  }
+  .landing .story-fields dt {
+    color: var(--ink-soft);
+  }
+  .landing .story-fields dd {
+    font-weight: 500;
+  }
+  .landing .story-fields dd span {
+    display: block;
+    font-weight: 400;
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+  }
+  .landing .story-approval {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    padding: 0.9rem 1.15rem;
+    border-top: 1px solid var(--line);
+    background: var(--indigo-soft);
+  }
+  .landing .story-btn {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    height: 2rem;
+    padding-inline: 0.8rem;
+    border-radius: 0.45rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .landing .story-btn-ghost {
+    color: var(--ink-soft);
+  }
+  .landing .story-btn-primary {
+    background: var(--indigo);
+    color: #fffdf9;
+  }
+  .landing .story-btn-primary > span {
+    grid-area: 1 / 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  /* Static default: idle label. The pressed variant (stacked layout) shows the done label. */
+  .landing .story-btn-primary [data-approve-done] {
+    opacity: 0;
+  }
+  .landing .story-btn-primary[data-pressed] {
+    background: var(--ink);
+  }
+  .landing .story-btn-primary[data-pressed] [data-approve-idle] {
+    opacity: 0;
+  }
+  .landing .story-btn-primary[data-pressed] [data-approve-done] {
+    opacity: 1;
+  }
+  .landing .story-receipt {
+    padding: 1.15rem;
+  }
+  .landing .story-receipt .story-fields > div {
+    padding-inline: 0;
+  }
+
+  /* Desktop with motion: pin the stage for 300vh of scroll and let the card morph. */
+  @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+    .landing .story-stack {
+      display: none;
+    }
+    .landing .story-pin {
+      display: block;
+      height: 400vh;
+      margin-bottom: var(--section-gap);
+    }
+    .landing .story-stage {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      align-content: center;
+      align-items: start;
+    }
+    .landing .story-rail {
+      position: relative;
+      padding-left: 1.75rem;
+    }
+    .landing .story-progress {
+      position: absolute;
+      left: 0;
+      top: 0.4rem;
+      bottom: 0.4rem;
+      width: 1px;
+      background: var(--line);
+    }
+    .landing .story-progress > span {
+      position: absolute;
+      inset: 0;
+      background: var(--indigo);
+      transform: scaleY(0);
+      transform-origin: top;
+    }
+    .landing .story-steps {
+      display: grid;
+      gap: 1.6rem;
+      list-style: none;
+    }
+    .landing .story-steps li {
+      display: flex;
+      gap: 1rem;
+      color: var(--ink-soft);
+      transition: color 0.35s ease;
+    }
+    .landing .story-steps li[data-active] {
+      color: var(--ink);
+    }
+    .landing .story-steps li[data-active] .story-step-num {
+      color: var(--indigo);
+    }
+    /* Only the active step shows its explanation; the rest stay as one-line titles. */
+    .landing .story-steps li > div {
+      display: grid;
+      grid-template-rows: auto 0fr;
+      transition: grid-template-rows 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .landing .story-steps li[data-active] > div {
+      grid-template-rows: auto 1fr;
+    }
+    .landing .story-steps li p {
+      overflow: hidden;
+      margin-top: 0;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    .landing .story-steps li[data-active] p {
+      padding-top: 0.5rem;
+      opacity: 1;
+    }
+    .landing .story-scene {
+      display: grid;
+      gap: 1.1rem;
+      /* Fixed-height slot: the card grows downward inside it instead of re-centring. */
+      min-height: 30rem;
+      align-content: start;
+    }
+    .landing .story-scene [data-block] {
+      overflow: hidden;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .landing .story-dots i,
     .landing .mask > span,
     .landing .hero-fade,
     .landing .orbit .satellite,
@@ -281,5 +552,17 @@ html.lenis body {
   55%,
   100% {
     transform: translateX(101%);
+  }
+}
+@keyframes landing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
   }
 }
