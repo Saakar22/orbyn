@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { OrbynWordmark } from "@/components/brand/orbyn-mark";
 import { DemoBanner } from "@/components/shell/demo-banner";
+import { WelcomeTour } from "@/components/shell/welcome-tour";
+import { getAuthContext } from "@/server/session";
 import { NavLinks, SidebarNav } from "@/components/shell/sidebar-nav";
 import { UserBlock } from "@/components/shell/user-block";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,8 +37,18 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         </Suspense>
         <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
       </main>
+      <Suspense>
+        <TourGate />
+      </Suspense>
     </div>
   );
+}
+
+/** Shows the welcome tour until the person has seen it once. Remembered on their account, not in the browser. */
+async function TourGate() {
+  const context = await getAuthContext();
+  if (!context || !context.user.onboardedAt || context.user.tourDismissedAt) return null;
+  return <WelcomeTour firstName={context.user.name.split(" ")[0]} />;
 }
 
 function PageSkeleton() {

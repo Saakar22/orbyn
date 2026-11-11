@@ -58,7 +58,7 @@ export async function registerAccount(account: NewAccount, options: { keepGuestI
 
     return await db.$transaction(async (tx) => {
       const user = await tx.user.create({
-        data: { name: account.name.trim(), email, passwordHash, onboardedAt: new Date(), workspace: { create: { name: workspaceName(account) } } },
+        data: { name: account.name.trim(), email, passwordHash, workspace: { create: { name: workspaceName(account) } } },
         include: { workspace: true },
       });
       await audit({ workspaceId: user.workspace!.id, userId: user.id, actor: "user", action: "account.created", entityType: "User", entityId: user.id }, tx);
@@ -94,7 +94,7 @@ export async function accountForGoogle(profile: { sub: string; email: string; na
 
   const name = profile.name?.trim() || email.split("@")[0];
   return db.user.create({
-    data: { name, email, googleId: profile.sub, onboardedAt: new Date(), workspace: { create: { name: workspaceName({ name }) } } },
+    data: { name, email, googleId: profile.sub, workspace: { create: { name: workspaceName({ name }) } } },
   });
 }
 

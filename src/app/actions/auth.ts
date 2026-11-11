@@ -59,7 +59,7 @@ export async function signupAction(_prev: AuthFormState, formData: FormData): Pr
       email: parsed.data.email,
       password: parsed.data.password,
       remember: "true",
-      redirectTo: keptDemo ? "/dashboard?welcome=kept" : "/dashboard",
+      redirectTo: keptDemo ? "/dashboard" : "/onboarding",
     });
   } catch (error) {
     if (error instanceof AuthError) redirect("/login?created=1");

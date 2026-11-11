@@ -83,7 +83,7 @@ function earlier(date: Date, limit: number) {
   return date.getTime() > limit ? new Date(limit - 5 * 60_000) : date;
 }
 
-export async function seedDemoWorkspace(db: PrismaClient, workspaceId: string) {
+export async function seedDemoWorkspace(db: PrismaClient, workspaceId: string, currency = "USD") {
   const now = Date.now();
 
   const clients = await Promise.all(
@@ -108,7 +108,7 @@ export async function seedDemoWorkspace(db: PrismaClient, workspaceId: string) {
         clientId: clients[seed.client].id,
         invoiceNumber: `INV-${String(index + 1).padStart(4, "0")}`,
         description: service.description,
-        currency: "USD",
+        currency,
         subtotalMinor: totals.subtotalMinor,
         taxMinor: totals.taxMinor,
         totalMinor: totals.totalMinor,
@@ -128,7 +128,7 @@ export async function seedDemoWorkspace(db: PrismaClient, workspaceId: string) {
               create: {
                 workspaceId,
                 amountMinor: totals.totalMinor,
-                currency: "USD",
+                currency,
                 status: "COMPLETED",
                 source: "SEEDED",
                 payerEmail: CLIENTS[seed.client].email,
