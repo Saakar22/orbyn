@@ -3,6 +3,7 @@ import { Hero } from "@/components/landing/hero";
 import { Playground } from "@/components/landing/playground";
 import { Story } from "@/components/landing/story";
 import { Statement } from "@/components/landing/statement";
+import { Trust } from "@/components/landing/trust";
 import { SmoothScroll } from "@/components/landing/smooth-scroll";
 import "./landing.css";
 
@@ -25,6 +26,7 @@ export default function Landing() {
         <Statement />
         <Story />
         <Playground />
+        <Trust />
       </main>
     </div>
   );

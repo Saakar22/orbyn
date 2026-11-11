@@ -589,6 +589,66 @@ html.lenis body {
     color: var(--ink-soft);
   }
 
+  /* ---------- Trust ---------- */
+  .landing .trust {
+    padding-block: var(--section-gap);
+    border-top: 1px solid var(--line);
+  }
+  .landing .trust-list {
+    margin-top: clamp(2rem, 4vw, 3.5rem);
+    list-style: none;
+  }
+  .landing .trust-list li {
+    display: grid;
+    gap: 0.75rem 2.5rem;
+    padding-block: clamp(1.25rem, 2.6vw, 2.25rem);
+    border-top: 1px solid var(--line);
+    outline-offset: -2px;
+  }
+  .landing .trust-list li:last-child {
+    border-bottom: 1px solid var(--line);
+  }
+  .landing .trust-list h3 {
+    font-size: clamp(2rem, 5.4vw, 5.25rem);
+    line-height: 1;
+    transition: color 0.3s ease;
+  }
+  .landing .trust-body p {
+    max-width: 44ch;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+
+  /* Pointer devices: the explanation is tucked away until hover or keyboard focus. */
+  @media (hover: hover) and (min-width: 768px) {
+    .landing .trust-list li {
+      grid-template-columns: 7fr 5fr;
+      align-items: center;
+    }
+    .landing .trust-body {
+      display: grid;
+      grid-template-rows: 0fr;
+      opacity: 0;
+      transition:
+        grid-template-rows 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+        opacity 0.3s ease;
+    }
+    .landing .trust-body p {
+      overflow: hidden;
+    }
+    .landing .trust-list li:hover .trust-body,
+    .landing .trust-list li:focus-visible .trust-body {
+      grid-template-rows: 1fr;
+      opacity: 1;
+    }
+    /* Quieten the other two so the one being read stands out. */
+    .landing .trust-list:hover li:not(:hover) h3,
+    .landing .trust-list:focus-within li:not(:focus-visible) h3 {
+      color: var(--ink-faint);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .landing .story-dots i,
     .landing .mask > span,
