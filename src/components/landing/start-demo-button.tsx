@@ -1,16 +1,30 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { ArrowRight, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function StartDemoButton() {
+const SIZES = {
+  nav: "h-9 px-4 text-[13px]",
+  hero: "h-12 px-6 text-[15px]",
+  closing: "h-14 px-8 text-base",
+} as const;
+
+/** Submit button for the demo form. Must be rendered inside <form action={startDemo}>. */
+export function StartDemoButton({ size = "hero", label = "Try the live demo" }: { size?: keyof typeof SIZES; label?: string }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="lg" disabled={pending} className="h-10 gap-2 px-5">
-      {pending ? <Loader2 className="size-4 animate-spin" /> : null}
-      {pending ? "Preparing your workspace…" : "Try the live demo"}
-      {pending ? null : <ArrowRight className="size-4" />}
-    </Button>
+    <button
+      type="submit"
+      disabled={pending}
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[var(--indigo)] font-medium text-[#fffdf9]",
+        "transition-[background-color,transform] duration-200 hover:bg-[var(--ink)] active:scale-[0.98] disabled:opacity-70",
+        SIZES[size],
+      )}
+    >
+      {pending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+      {pending ? "Preparing your workspace…" : label}
+    </button>
   );
 }

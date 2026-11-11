@@ -100,4 +100,161 @@ html.lenis body {
     mix-blend-mode: multiply;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
   }
+
+  /* ---------- Hero ---------- */
+  .landing .hero {
+    display: flex;
+    flex-direction: column;
+    min-height: 100svh;
+  }
+
+  .landing .nav-link {
+    position: relative;
+    padding-block: 0.35rem;
+    color: var(--ink);
+  }
+  .landing .nav-link::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .landing .nav-link:hover::after,
+  .landing .nav-link:focus-visible::after {
+    transform: scaleX(1);
+  }
+
+  /* Masked slide-up: the outer span clips, the inner span rises into place. */
+  .landing .mask {
+    display: block;
+    overflow: clip;
+    overflow-clip-margin: 0.04em;
+    padding-bottom: 0.12em;
+    margin-bottom: -0.12em;
+  }
+  .landing .mask > span {
+    display: block;
+    animation: landing-rise 1.05s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 70ms + 80ms);
+  }
+  .landing .hero-fade {
+    animation: landing-fade 0.9s ease-out both;
+    animation-delay: calc(var(--i, 0) * 70ms + 80ms);
+  }
+
+  .landing .wordmark {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--step-wordmark);
+    line-height: 0.82;
+    letter-spacing: 0;
+    margin-inline: -0.03em;
+  }
+  .landing .wordmark .letter {
+    position: relative;
+    display: block;
+  }
+
+  .landing .orbit {
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    width: 0.94em;
+    height: 0.3em;
+    translate: -50% -50%;
+    rotate: -24deg;
+    color: color-mix(in srgb, var(--indigo) 38%, transparent);
+    pointer-events: none;
+  }
+  .landing .orbit svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .landing .orbit .satellite {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0.036em;
+    height: 0.036em;
+    border-radius: 50%;
+    background: var(--indigo);
+    offset-path: ellipse(50% 50% at 50% 50%);
+    offset-rotate: 0deg;
+    animation: landing-orbit 16s linear infinite;
+  }
+  @supports not (offset-path: ellipse(50% 50% at 50% 50%)) {
+    .landing .orbit .satellite {
+      left: 92%;
+      top: 18%;
+      animation: none;
+    }
+  }
+
+  .landing .scroll-cue {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+  .landing .scroll-cue-line {
+    position: relative;
+    display: block;
+    width: 3.5rem;
+    height: 1px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .landing .scroll-cue-line::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--ink);
+    animation: landing-cue 2.4s cubic-bezier(0.6, 0, 0.2, 1) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .landing .mask > span,
+    .landing .hero-fade,
+    .landing .orbit .satellite,
+    .landing .scroll-cue-line::after {
+      animation: none;
+    }
+  }
+}
+
+@keyframes landing-rise {
+  from {
+    transform: translateY(108%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes landing-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes landing-orbit {
+  to {
+    offset-distance: 100%;
+  }
+}
+@keyframes landing-cue {
+  0% {
+    transform: translateX(-101%);
+  }
+  55%,
+  100% {
+    transform: translateX(101%);
+  }
 }
