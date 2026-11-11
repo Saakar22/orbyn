@@ -1,0 +1,194 @@
+/* Auth screens: the editorial panel and its looping plan-card preview. */
+@layer components {
+  .auth-panel {
+    --night: #0f0c24;
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    background: radial-gradient(120% 75% at 72% 108%, #8f82e6 0%, #5446c8 20%, #2a2077 48%, var(--night) 100%);
+    color: #f4f1ea;
+  }
+  /* A sliver of the landing page's orb, rising behind the card. */
+  .auth-panel::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    right: -9rem;
+    bottom: -19rem;
+    width: 30rem;
+    height: 30rem;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 25%, #fffdf9 0%, #f4f1ea 42%, #ddd6f3 80%, #b6abe8 100%);
+    box-shadow: 0 0 9rem 1.5rem rgb(170 156 250 / 0.45);
+    opacity: 0.9;
+    pointer-events: none;
+  }
+  .auth-display {
+    font-family: var(--font-instrument-serif), "Iowan Old Style", Georgia, serif;
+    font-size: clamp(2.6rem, 1.4rem + 3.1vw, 4.4rem);
+    line-height: 0.98;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .plan-preview {
+    width: min(100%, 23rem);
+    border-radius: 1rem;
+    background: #fffdf9;
+    color: #17132f;
+    box-shadow: 0 30px 70px -28px rgb(8 6 24 / 0.7), 0 2px 6px rgb(8 6 24 / 0.18);
+    font-size: 0.8125rem;
+  }
+  .plan-preview-prompt {
+    width: fit-content;
+    max-width: 90%;
+    margin: 0 0 0.75rem auto;
+    padding: 0.55rem 0.8rem;
+    border-radius: 0.9rem 0.9rem 0.25rem 0.9rem;
+    background: rgb(255 253 249 / 0.14);
+    border: 1px solid rgb(255 253 249 / 0.22);
+    color: #f4f1ea;
+    font-size: 0.8125rem;
+    backdrop-filter: blur(6px);
+  }
+  .plan-preview dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.55rem 1.25rem;
+    padding: 0.9rem 1rem;
+  }
+  .plan-preview dt {
+    color: #6d6885;
+  }
+  .plan-preview dd {
+    text-align: right;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .plan-preview-head,
+  .plan-preview-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 1rem;
+  }
+  .plan-preview-head {
+    border-bottom: 1px solid rgb(23 19 47 / 0.09);
+    font-weight: 600;
+  }
+  .plan-preview-foot {
+    border-top: 1px solid rgb(23 19 47 / 0.09);
+  }
+  .plan-preview-approve {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    height: 1.9rem;
+    padding-inline: 0.85rem;
+    border-radius: 0.5rem;
+    background: #3a2fb8;
+    color: #fffdf9;
+    font-weight: 600;
+  }
+  .plan-preview-state {
+    position: relative;
+    display: grid;
+    height: 1.4rem;
+  }
+  .plan-preview-state > * {
+    grid-area: 1 / 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    justify-self: start;
+    padding-inline: 0.45rem;
+    border-radius: 0.3rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .plan-preview-state > :nth-child(1) {
+    background: #eeeaf7;
+    color: #5c5678;
+    opacity: 0;
+  }
+  .plan-preview-state > :nth-child(2) {
+    background: #dff3e8;
+    color: #1f7a4d;
+  }
+
+  /* The loop: request, plan, approval, verified payment. Without motion the card simply shows its finished state. */
+  @media (prefers-reduced-motion: no-preference) {
+    .plan-preview-prompt {
+      animation: plan-in 12s var(--ease-out) infinite both;
+    }
+    .plan-preview {
+      animation: plan-in 12s var(--ease-out) infinite both;
+      animation-delay: 1.3s;
+    }
+    .plan-preview-approve {
+      animation: plan-press 12s ease infinite both;
+    }
+    .plan-preview-state > :nth-child(1) {
+      animation: plan-draft 12s ease infinite both;
+    }
+    .plan-preview-state > :nth-child(2) {
+      animation: plan-paid 12s ease infinite both;
+    }
+  }
+  @keyframes plan-in {
+    0% {
+      opacity: 0;
+      translate: 0 0.9rem;
+    }
+    7%,
+    84% {
+      opacity: 1;
+      translate: 0 0;
+    }
+    90%,
+    100% {
+      opacity: 0;
+      translate: 0 -0.4rem;
+    }
+  }
+  @keyframes plan-press {
+    0%,
+    44% {
+      scale: 1;
+      background: #3a2fb8;
+    }
+    47% {
+      scale: 0.94;
+      background: #2a2188;
+    }
+    51%,
+    100% {
+      scale: 1;
+      background: #1f7a4d;
+    }
+  }
+  @keyframes plan-draft {
+    0%,
+    60% {
+      opacity: 1;
+    }
+    64%,
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes plan-paid {
+    0%,
+    62% {
+      opacity: 0;
+      translate: 0 0.3rem;
+    }
+    67%,
+    100% {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+}

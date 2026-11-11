@@ -1,4 +1,3 @@
-import { Instrument_Serif } from "next/font/google";
 import { Suspense } from "react";
 import { NavCta, NavLogin } from "@/components/landing/account-links";
 import { BuilderNote } from "@/components/landing/builder-note";
@@ -11,16 +10,9 @@ import { SmoothScroll } from "@/components/landing/smooth-scroll";
 import { Statement } from "@/components/landing/statement";
 import { Story } from "@/components/landing/story";
 import { Trust } from "@/components/landing/trust";
+import { instrumentSerif } from "@/lib/fonts";
 import "./landing.css";
 
-// Display face for the landing page only. next/font self-hosts it and generates a size-adjusted
-// fallback, so the swap does not shift layout.
-const instrumentSerif = Instrument_Serif({
-  weight: "400",
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-instrument-serif",
-});
 
 export default function Landing() {
   return (

@@ -19,6 +19,7 @@ import { buildInstructions } from "@/server/agent/instructions";
 import { createOrbynTools, type OrbynUIMessage } from "@/server/agent/tools";
 import { db } from "@/server/db";
 import { audit } from "@/server/services/audit";
+import { isSameOrigin } from "@/server/auth/origin";
 import { requireWorkspaceId, UnauthorizedError } from "@/server/session";
 
 export const maxDuration = 60;
@@ -26,6 +27,9 @@ export const maxDuration = 60;
 const body = z.object({ id: z.string().min(1), message: z.unknown() });
 
 export async function POST(request: Request) {
+  // The session cookie rides along on cross-site requests too, so refuse anything not sent by our own pages.
+  if (!isSameOrigin(request)) return Response.json({ error: "Forbidden" }, { status: 403 });
+
   let workspaceId: string;
   try {
     workspaceId = await requireWorkspaceId();

@@ -1,5 +1,5 @@
 import { LogOut } from "lucide-react";
-import { signOut } from "@/app/actions/auth";
+import { signOutAction } from "@/app/actions/auth";
 import { requireWorkspace } from "@/server/session";
 
 export async function UserBlock() {
@@ -19,7 +19,7 @@ export async function UserBlock() {
         <div className="truncate text-[13px] font-medium text-sidebar-accent-foreground">{user.name}</div>
         <div className="truncate text-[11px] text-sidebar-foreground/70">{workspace.name}</div>
       </div>
-      <form action={signOut}>
+      <form action={signOutAction}>
         <button
           type="submit"
           aria-label="Sign out"

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { OrbynWordmark } from "@/components/brand/orbyn-mark";
+import { DemoBanner } from "@/components/shell/demo-banner";
 import { NavLinks, SidebarNav } from "@/components/shell/sidebar-nav";
 import { UserBlock } from "@/components/shell/user-block";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,6 +30,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </aside>
       <main className="min-w-0 flex-1">
+        <Suspense>
+          <DemoBanner />
+        </Suspense>
         <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
       </main>
     </div>
