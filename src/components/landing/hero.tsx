@@ -38,7 +38,7 @@ export function Hero() {
               </span>
               {/* The logo's satellite, orbiting the O. Sits outside the mask so it isn't clipped. */}
               {i === 0 ? (
-                <span className="orbit hero-fade" style={delay(10)}>
+                <span className="orbit hero-fade" style={delay(8)}>
                   <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                     <ellipse cx="50" cy="50" rx="49.5" ry="49.5" fill="none" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
                   </svg>
@@ -52,12 +52,12 @@ export function Hero() {
         <h1 id="top-headline" className="font-display col-span-12 mt-8 text-[length:var(--step-headline)] md:col-span-8 md:mt-12">
           {HEADLINE.map((line, i) => (
             <span key={line} className="mask">
-              <span style={delay(i + 5)}>{line}</span>
+              <span style={delay(i + 2)}>{line}</span>
             </span>
           ))}
         </h1>
 
-        <div className="hero-fade col-span-12 mt-8 md:col-span-4 md:col-start-9 md:mt-12 md:self-end" style={delay(9)}>
+        <div className="hero-fade col-span-12 mt-8 md:col-span-4 md:col-start-9 md:mt-12 md:self-end" style={delay(5)}>
           <p className="max-w-[34ch] text-[length:var(--step-lead)] leading-relaxed text-[var(--ink-soft)]">
             Tell Orbyn what you need in plain words. It drafts the invoice, waits for your approval, and marks it paid only
             when PayPal confirms the money arrived.
@@ -69,7 +69,7 @@ export function Hero() {
         </div>
       </div>
 
-      <div className="grid-12 hero-fade pb-7" style={delay(12)}>
+      <div className="grid-12 hero-fade pb-7" style={delay(7)}>
         <a href="#statement" className="scroll-cue col-span-12 justify-self-start text-[13px] text-[var(--ink-soft)]">
           <span className="scroll-cue-line" aria-hidden />
           Scroll to discover

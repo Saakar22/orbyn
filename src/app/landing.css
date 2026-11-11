@@ -26,7 +26,7 @@ html.lenis body {
     --paper-deep: #ece7de;
     --ink: #15131f;
     --ink-soft: #5e596b; /* 6.3:1 on paper */
-    --ink-faint: #b9b3c2; /* decorative / not-yet-read words only */
+    --ink-faint: #8e8899; /* large display text only: 3.2:1 on paper (AA large) */
     --line: #dcd6cb;
     --indigo: #3a2fa6;
     --indigo-soft: #e6e2f6;
@@ -42,6 +42,8 @@ html.lenis body {
     --muted-foreground: var(--ink-soft);
     --border: var(--line);
     --ring: var(--indigo);
+    /* Darker green than the app's, so the small "Paid" badge text passes AA on its tint here. */
+    --success: #17694a;
 
     /* Type scale: fluid between 375px and 1440px. */
     --step-wordmark: clamp(4.5rem, 21vw, 21rem);
@@ -138,12 +140,12 @@ html.lenis body {
   }
   .landing .mask > span {
     display: block;
-    animation: landing-rise 1.05s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    animation-delay: calc(var(--i, 0) * 70ms + 80ms);
+    animation: landing-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 55ms);
   }
   .landing .hero-fade {
     animation: landing-fade 0.9s ease-out both;
-    animation-delay: calc(var(--i, 0) * 70ms + 80ms);
+    animation-delay: calc(var(--i, 0) * 55ms);
   }
 
   .landing .wordmark {
