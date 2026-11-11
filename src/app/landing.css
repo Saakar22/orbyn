@@ -649,6 +649,27 @@ html.lenis body {
     }
   }
 
+  /* ---------- Builder note ---------- */
+  .landing .note {
+    padding-block: var(--section-gap);
+  }
+  .landing .note blockquote {
+    font-size: clamp(1.625rem, 3.3vw, 3.25rem);
+    line-height: 1.14;
+    text-wrap: pretty;
+  }
+  .landing .note figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 3.5rem;
+    margin-top: clamp(1.75rem, 3vw, 2.75rem);
+    font-size: 0.9375rem;
+  }
+  .landing .note figcaption > div {
+    display: grid;
+    gap: 0.15rem;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .landing .story-dots i,
     .landing .mask > span,
