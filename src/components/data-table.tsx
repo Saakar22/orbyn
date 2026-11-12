@@ -12,7 +12,7 @@ export type Column<Row> = {
 };
 
 /**
- * A table on tablets and up, a stack of cards on phones. The header sticks to the top of the
+ * A table on desktops, a stack of cards on phones and tablets (the sidebar leaves a tablet too narrow for every column). The header sticks to the top of the
  * page while its rows scroll, so the table must not sit inside a scrolling wrapper.
  */
 export function DataTable<Row>({
@@ -39,7 +39,7 @@ export function DataTable<Row>({
 
   return (
     <>
-      <div className="hidden rounded-xl border bg-card shadow-raised md:block">
+      <div className="hidden rounded-xl border bg-card shadow-raised lg:block">
         <table className="w-full text-sm">
           <caption className="sr-only">{caption}</caption>
           <thead className="sticky top-0 z-10">
@@ -79,7 +79,7 @@ export function DataTable<Row>({
         {footer ? <div className="border-t px-3 py-2.5">{footer}</div> : null}
       </div>
 
-      <div className="md:hidden">
+      <div className="lg:hidden">
         <ul className="space-y-2" aria-label={caption}>
           {rows.map((row) => (
             <li key={rowKey(row)} className={cn("rounded-xl border bg-card p-3 shadow-raised", rowClassName?.(row))}>
