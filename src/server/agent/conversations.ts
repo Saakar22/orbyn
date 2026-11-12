@@ -4,22 +4,22 @@ import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/server/db";
 import type { OrbynUIMessage } from "@/server/agent/tools";
 
-export async function createConversation(userId: string) {
-  return db.agentConversation.create({ data: { userId } });
+export async function createConversation(workspaceId: string) {
+  return db.agentConversation.create({ data: { workspaceId } });
 }
 
-export async function listConversations(userId: string, limit = 20) {
+export async function listConversations(workspaceId: string, limit = 20) {
   return db.agentConversation.findMany({
-    where: { userId, messages: { some: {} } },
+    where: { workspaceId, messages: { some: {} } },
     orderBy: { updatedAt: "desc" },
     take: limit,
     select: { id: true, title: true, updatedAt: true },
   });
 }
 
-export async function getConversation(userId: string, conversationId: string) {
+export async function getConversation(workspaceId: string, conversationId: string) {
   const conversation = await db.agentConversation.findFirst({
-    where: { id: conversationId, userId },
+    where: { id: conversationId, workspaceId },
     include: { messages: { orderBy: { position: "asc" } } },
   });
   if (!conversation) return null;

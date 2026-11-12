@@ -6,7 +6,7 @@ const STYLES: Record<string, { label: string; className: string; dot: string }> 
   OVERDUE: { label: "Overdue", className: "bg-danger-soft text-danger", dot: "bg-danger" },
   PARTIALLY_PAID: { label: "Partially paid", className: "bg-accent text-accent-foreground", dot: "bg-success" },
   PAID: { label: "Paid", className: "bg-success-soft text-success", dot: "bg-success" },
-  CANCELLED: { label: "Cancelled", className: "bg-muted text-muted-foreground line-through", dot: "bg-muted-foreground/40" },
+  CANCELLED: { label: "Cancelled", className: "bg-muted/70 text-muted-foreground/80", dot: "bg-muted-foreground/40" },
   COMPLETED: { label: "Completed", className: "bg-success-soft text-success", dot: "bg-success" },
   DENIED: { label: "Denied", className: "bg-danger-soft text-danger", dot: "bg-danger" },
   REFUNDED: { label: "Refunded", className: "bg-muted text-muted-foreground", dot: "bg-muted-foreground/60" },
@@ -31,6 +31,11 @@ export function StatusBadge({ status, className }: { status: string; className?:
       {style.label}
     </span>
   );
+}
+
+/** Amount styling that goes with a status: cancelled invoices show their amount struck through. */
+export function amountClass(status: string) {
+  return status === "CANCELLED" ? "text-muted-foreground line-through decoration-muted-foreground/60" : "";
 }
 
 /** Marks seeded demo records so they are never mistaken for real sandbox activity. */

@@ -1,28 +1,105 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
-import { InvoiceFilters } from "@/components/invoices/invoice-filters";
+import { ArrowUpRight, FileText, FlaskConical, Plus } from "lucide-react";
+import { DataTable, type Column } from "@/components/data-table";
+import { EmptyState } from "@/components/empty-state";
+import { FilterTabs, Pagination, SearchBox } from "@/components/list-controls";
 import { PageContainer, PageHeader } from "@/components/page-header";
-import { SourceBadge, StatusBadge } from "@/components/status-badge";
+import { amountClass, SourceBadge, StatusBadge } from "@/components/status-badge";
+import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { describeDue, formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
 import { balanceDue, displayStatus } from "@/lib/payments";
-import { listInvoices, listInvoicesInput } from "@/server/services/invoices";
-import { requireUser } from "@/server/session";
+import { countInvoicesByTab, INVOICE_TABS, listInvoices, type InvoiceTab } from "@/server/services/invoices";
+import { requireWorkspace } from "@/server/session";
 
 export const metadata = { title: "Invoices" };
 
 // Reads the signed-in session, so navigation waits for the server by design (opts out of instant-navigation validation).
 export const instant = false;
 
+const PAGE_SIZE = 20;
+const TAB_LABELS: Record<InvoiceTab, string> = {
+  ALL: "All",
+  UNPAID: "Unpaid",
+  OVERDUE: "Overdue",
+  PENDING: "Pending",
+  PAID: "Paid",
+  DRAFT: "Draft",
+  CANCELLED: "Cancelled",
+};
+
+type Row = Awaited<ReturnType<typeof listInvoices>>[number];
+
 export default async function InvoicesPage({ searchParams }: PageProps<"/invoices">) {
-  const user = await requireUser();
+  const { workspace } = await requireWorkspace();
   const params = await searchParams;
-  const filters = listInvoicesInput.safeParse({
-    status: typeof params.status === "string" && params.status ? params.status : undefined,
-    query: typeof params.q === "string" && params.q ? params.q : undefined,
+  const tab = INVOICE_TABS.find((value) => value === params.status) ?? "ALL";
+  const query = typeof params.q === "string" && params.q.trim() ? params.q.trim().slice(0, 100) : undefined;
+  const counts = await countInvoicesByTab(workspace.id, query);
+  const total = counts[tab];
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(pages, Math.max(1, Number(params.page) || 1));
+  const invoices = await listInvoices(workspace.id, {
+    status: tab === "ALL" ? undefined : tab,
+    query,
+    limit: PAGE_SIZE,
+    offset: (page - 1) * PAGE_SIZE,
   });
-  const invoices = await listInvoices(user.id, filters.success ? filters.data : {});
+  const hasDemo = invoices.some((invoice) => invoice.source === "SEEDED");
+
+  const columns: Column<Row>[] = [
+    {
+      key: "invoice",
+      header: "Invoice",
+      hideOnMobile: true,
+      cell: (invoice) => (
+        <Link href={`/invoices/${invoice.id}`} className="block after:absolute after:inset-0">
+          <span className="flex items-center gap-2 font-medium">
+            <span className="font-mono text-[12px]">{invoice.invoiceNumber}</span>
+            <SourceBadge source={invoice.source} />
+          </span>
+          <span className="mt-0.5 block max-w-[220px] truncate text-xs text-muted-foreground">{invoice.description}</span>
+        </Link>
+      ),
+    },
+    {
+      key: "client",
+      header: "Client",
+      hideOnMobile: true,
+      cell: (invoice) => (
+        <>
+          <div className="font-medium">{invoice.client.name}</div>
+          <div className="text-xs text-muted-foreground">{invoice.client.company}</div>
+        </>
+      ),
+    },
+    { key: "status", header: "Status", cell: (invoice) => <StatusBadge status={displayStatus(invoice)} /> },
+    { key: "issued", header: "Issued", cell: (invoice) => <span className="text-muted-foreground">{formatDate(invoice.issueDate)}</span> },
+    { key: "due", header: "Due", cell: (invoice) => <DueCell invoice={invoice} /> },
+    {
+      key: "amount",
+      header: "Amount",
+      align: "right",
+      cell: (invoice) => (
+        <span className="tabular font-medium">
+          <span className={amountClass(invoice.status)}>{formatMoney(invoice.totalMinor, invoice.currency)}</span>
+          {invoice.amountPaidMinor > 0 && invoice.amountPaidMinor < invoice.totalMinor ? (
+            <span className="block text-xs font-normal text-muted-foreground">{formatMoney(balanceDue(invoice), invoice.currency)} due</span>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      key: "open",
+      header: "",
+      hideOnMobile: true,
+      className: "w-10",
+      cell: () => (
+        <ArrowUpRight className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100" aria-hidden />
+      ),
+    },
+  ];
 
   return (
     <PageContainer>
@@ -37,66 +114,78 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
           </Button>
         }
       />
-      <InvoiceFilters />
 
-      <div className="overflow-x-auto rounded-lg border bg-card">
-        <table className="w-full min-w-[720px] text-[13px]">
-          <thead>
-            <tr className="border-b text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-              <th className="px-4 py-2.5 font-medium">Invoice</th>
-              <th className="px-4 py-2.5 font-medium">Client</th>
-              <th className="px-4 py-2.5 font-medium">Status</th>
-              <th className="px-4 py-2.5 font-medium">Issued</th>
-              <th className="px-4 py-2.5 font-medium">Due</th>
-              <th className="px-4 py-2.5 text-right font-medium">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoices.map((invoice) => (
-              <tr key={invoice.id} className="group border-b last:border-0 hover:bg-muted/50">
-                <td className="px-4 py-3">
-                  <Link href={`/invoices/${invoice.id}`} className="flex items-center gap-2 font-medium">
-                    <span className="font-mono text-[12px]">{invoice.invoiceNumber}</span>
-                    <SourceBadge source={invoice.source} />
-                  </Link>
-                  <div className="mt-0.5 max-w-[220px] truncate text-xs text-muted-foreground">{invoice.description}</div>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="font-medium">{invoice.client.name}</div>
-                  <div className="text-xs text-muted-foreground">{invoice.client.company}</div>
-                </td>
-                <td className="px-4 py-3">
-                  <StatusBadge status={displayStatus(invoice)} />
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">{formatDate(invoice.issueDate)}</td>
-                <td className="px-4 py-3">
-                  <div>{formatDate(invoice.dueDate)}</div>
-                  {invoice.status === "PENDING" || invoice.status === "OVERDUE" ? (
-                    <div className={invoice.status === "OVERDUE" ? "text-xs text-danger" : "text-xs text-muted-foreground"}>
-                      {describeDue(invoice.dueDate)}
-                    </div>
-                  ) : null}
-                </td>
-                <td className="tabular px-4 py-3 text-right font-medium">
-                  {formatMoney(invoice.totalMinor, invoice.currency)}
-                  {invoice.amountPaidMinor > 0 && invoice.amountPaidMinor < invoice.totalMinor ? (
-                    <div className="text-xs font-normal text-muted-foreground">
-                      {formatMoney(balanceDue(invoice), invoice.currency)} due
-                    </div>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-            {invoices.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-16 text-center text-sm text-muted-foreground">
-                  No invoices match these filters.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+      {hasDemo ? (
+        <Banner tone="info">
+          Rows marked <span className="font-semibold">Demo</span> are sample data. Payments marked PayPal Sandbox are real sandbox captures.
+        </Banner>
+      ) : null}
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <FilterTabs
+          name="status"
+          label="Filter invoices by status"
+          options={INVOICE_TABS.map((value) => ({ value, label: TAB_LABELS[value], count: counts[value] }))}
+        />
+        <SearchBox label="Search invoices" placeholder="Search client, number, item" />
       </div>
+
+      <DataTable
+        caption="Invoices"
+        columns={columns}
+        rows={invoices}
+        rowKey={(invoice) => invoice.id}
+        rowClassName={() => "relative cursor-pointer"}
+        mobileTitle={(invoice) => (
+          <Link href={`/invoices/${invoice.id}`} className="flex items-center justify-between gap-2 after:absolute after:inset-0">
+            <span className="truncate">{invoice.client.name}</span>
+            <span className="flex shrink-0 items-center gap-1.5">
+              <span className="font-mono text-[12px] text-muted-foreground">{invoice.invoiceNumber}</span>
+              <SourceBadge source={invoice.source} />
+            </span>
+          </Link>
+        )}
+        empty={
+          counts.ALL === 0 && !query ? (
+            <EmptyState
+              icon={FileText}
+              title="No invoices yet"
+              action={
+                <>
+                  <Button asChild size="sm">
+                    <Link href="/invoices/new">New invoice</Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={`/assistant?draft=${encodeURIComponent("Create an invoice for ")}`}>Ask the assistant</Link>
+                  </Button>
+                </>
+              }
+            >
+              Create one yourself, or tell the assistant who to bill and for what.
+            </EmptyState>
+          ) : (
+            <EmptyState icon={FlaskConical} title="Nothing matches">
+              No invoices fit this filter{query ? ` and the search “${query}”` : ""}. Try another tab or clear the search.
+            </EmptyState>
+          )
+        }
+        footer={<Pagination page={page} pageSize={PAGE_SIZE} total={total} noun="invoices" />}
+      />
     </PageContainer>
+  );
+}
+
+function DueCell({ invoice }: { invoice: Row }) {
+  if (invoice.status === "PAID") {
+    return <span className="text-success">{invoice.paidAt ? `Paid ${formatDate(invoice.paidAt, { month: "short", day: "numeric" })}` : "Paid"}</span>;
+  }
+  if (invoice.status === "CANCELLED" || invoice.status === "DRAFT") {
+    return <span className="text-muted-foreground">{invoice.status === "DRAFT" ? "Not issued" : "—"}</span>;
+  }
+  return (
+    <>
+      <div>{formatDate(invoice.dueDate)}</div>
+      <div className={invoice.status === "OVERDUE" ? "text-xs text-danger" : "text-xs text-muted-foreground"}>{describeDue(invoice.dueDate)}</div>
+    </>
   );
 }

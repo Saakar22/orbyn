@@ -3,12 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { REMINDER_TONES } from "@/lib/reminders";
 import { cancelReminder, createReminder, markReminderSent, ReminderError } from "@/server/services/reminders";
-import { requireUserId } from "@/server/session";
+import { requireWorkspaceId } from "@/server/session";
 
 export type ReminderFormState = { error?: string; ok?: boolean } | undefined;
 
 export async function createReminderAction(invoiceId: string, _prev: ReminderFormState, formData: FormData): Promise<ReminderFormState> {
-  const userId = await requireUserId();
+  const workspaceId = await requireWorkspaceId();
   const tone = String(formData.get("tone") ?? "polite");
   const date = String(formData.get("sendOn") ?? "");
   const message = String(formData.get("message") ?? "").trim();
@@ -24,7 +24,7 @@ export async function createReminderAction(invoiceId: string, _prev: ReminderFor
   }
 
   try {
-    await createReminder(userId, { invoiceId, tone: tone as (typeof REMINDER_TONES)[number], message, scheduledAt }, "user");
+    await createReminder(workspaceId, { invoiceId, tone: tone as (typeof REMINDER_TONES)[number], message, scheduledAt }, "user");
   } catch (error) {
     if (error instanceof ReminderError) return { error: error.message };
     throw error;
@@ -35,15 +35,15 @@ export async function createReminderAction(invoiceId: string, _prev: ReminderFor
 }
 
 export async function markReminderSentAction(reminderId: string, invoiceId: string) {
-  const userId = await requireUserId();
-  await markReminderSent(userId, reminderId);
+  const workspaceId = await requireWorkspaceId();
+  await markReminderSent(workspaceId, reminderId);
   revalidatePath(`/invoices/${invoiceId}`);
   revalidatePath("/dashboard");
 }
 
 export async function cancelReminderAction(reminderId: string, invoiceId: string) {
-  const userId = await requireUserId();
-  await cancelReminder(userId, reminderId);
+  const workspaceId = await requireWorkspaceId();
+  await cancelReminder(workspaceId, reminderId);
   revalidatePath(`/invoices/${invoiceId}`);
   revalidatePath("/dashboard");
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { isToolUIPart, type UIMessage } from "ai";
-import { Ban, Check, CircleAlert, Loader2, ShieldCheck } from "lucide-react";
+import { Ban, Check, CircleAlert, Loader2, ShieldCheck, ExternalLink } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/money";
@@ -195,10 +195,23 @@ function renderToolPart(part: ToolPart, message: OrbynUIMessage, respond: Respon
           </div>
         );
       } else if (issue?.state === "output-available") {
-        status = (issue.output as { status: string }).status;
+        const issued = issue.output as { status: string; payPath?: string };
+        status = issued.status;
         footer = (
-          <div className="flex items-center gap-2 border-t px-3.5 py-2 text-xs text-success">
-            <Check className="size-3.5" /> Approved and issued. Ready for PayPal checkout.
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t px-3.5 py-2 text-xs">
+            <span className="flex items-center gap-2 text-success">
+              <Check className="size-3.5" /> Approved and issued. Ready for PayPal checkout.
+            </span>
+            {issued.payPath ? (
+              <a
+                href={issued.payPath}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 rounded-md border bg-card px-2 py-1 font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                Open PayPal checkout <ExternalLink className="size-3" aria-hidden />
+              </a>
+            ) : null}
           </div>
         );
       } else if (issue?.state === "output-denied") {

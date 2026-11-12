@@ -2,7 +2,7 @@ import { NewInvoiceForm } from "@/components/invoices/new-invoice-form";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { dateInputFromToday } from "@/lib/format";
 import { db } from "@/server/db";
-import { requireUser } from "@/server/session";
+import { requireWorkspace } from "@/server/session";
 
 export const metadata = { title: "New invoice" };
 
@@ -10,9 +10,9 @@ export const metadata = { title: "New invoice" };
 export const instant = false;
 
 export default async function NewInvoicePage() {
-  const user = await requireUser();
+  const { workspace } = await requireWorkspace();
   const clients = await db.client.findMany({
-    where: { userId: user.id },
+    where: { workspaceId: workspace.id },
     select: { name: true, email: true, company: true },
     orderBy: { name: "asc" },
   });

@@ -49,8 +49,8 @@ function invoiceSummary(invoice: InvoiceRow) {
   };
 }
 
-/** Tools are built per request so the authenticated userId is captured server-side, never model-supplied. */
-export function createOrbynTools(userId: string) {
+/** Tools are built per request so the authenticated workspaceId is captured server-side, never model-supplied. */
+export function createOrbynTools(workspaceId: string) {
   return {
     find_clients: tool({
       description:
@@ -59,7 +59,7 @@ export function createOrbynTools(userId: string) {
       execute: async ({ query }) => {
         const clients = await db.client.findMany({
           where: {
-            userId,
+            workspaceId,
             OR: [
               { name: { contains: query, mode: "insensitive" } },
               { company: { contains: query, mode: "insensitive" } },
@@ -79,7 +79,7 @@ export function createOrbynTools(userId: string) {
         limit: z.number().int().min(1).max(25).default(10),
       }),
       execute: async (input) => {
-        const invoices = await listInvoices(userId, input);
+        const invoices = await listInvoices(workspaceId, input);
         return {
           invoices: invoices.map(invoiceSummary),
           totalMinor: invoices.reduce((sum, invoice) => sum + invoice.totalMinor, 0),
@@ -95,7 +95,7 @@ export function createOrbynTools(userId: string) {
         invoiceId: z.string().optional(),
       }),
       execute: async ({ invoiceNumber, invoiceId }) => {
-        const invoice = await getInvoice(userId, { id: invoiceId, invoiceNumber });
+        const invoice = await getInvoice(workspaceId, { id: invoiceId, invoiceNumber });
         if (!invoice) return { error: "Invoice not found." };
         return {
           ...invoiceSummary(invoice),
@@ -127,8 +127,8 @@ export function createOrbynTools(userId: string) {
         "with the returned invoiceId so the user can review and approve. Amounts are in major units (500 = $500.00).",
       inputSchema: createInvoiceInput.omit({ dueDate: true }),
       execute: async (input) => {
-        const draft = await buildInvoiceDraft(userId, input);
-        const invoice = await saveInvoiceDraft(userId, draft, "agent", "DRAFT");
+        const draft = await buildInvoiceDraft(workspaceId, input);
+        const invoice = await saveInvoiceDraft(workspaceId, draft, "agent", "DRAFT");
         return {
           invoiceId: invoice.id,
           invoiceNumber: invoice.invoiceNumber,
@@ -151,7 +151,7 @@ export function createOrbynTools(userId: string) {
         "Issue a drafted invoice (DRAFT -> PENDING) so it can be paid. Requires the user's approval in the UI.",
       inputSchema: z.object({ invoiceId: z.string().min(1) }),
       execute: async ({ invoiceId }) => {
-        const { invoice, alreadyIssued } = await issueInvoice(userId, invoiceId, "agent");
+        const { invoice, alreadyIssued } = await issueInvoice(workspaceId, invoiceId, "agent");
         return {
           invoiceId: invoice.id,
           invoiceNumber: invoice.invoiceNumber,
@@ -160,6 +160,8 @@ export function createOrbynTools(userId: string) {
           totalMinor: invoice.totalMinor,
           currency: invoice.currency,
           dueDate: invoice.dueDate.toISOString(),
+          // The client's PayPal checkout. Clients can pay the full balance or part of it there.
+          payPath: `/pay/${invoice.publicToken}`,
           alreadyIssued,
         };
       },
@@ -177,11 +179,11 @@ export function createOrbynTools(userId: string) {
         sendInDays: z.number().int().min(0).max(60).default(0).describe("0 = ready to send today"),
       }),
       execute: async ({ invoiceNumber, tone, message, sendInDays }) => {
-        const found = await getInvoice(userId, { invoiceNumber });
+        const found = await getInvoice(workspaceId, { invoiceNumber });
         if (!found) return { error: `Invoice ${invoiceNumber} not found.` };
         try {
           const { reminder, invoice } = await createReminder(
-            userId,
+            workspaceId,
             { invoiceId: found.id, tone, message, scheduledAt: new Date(Date.now() + sendInDays * 86_400_000) },
             "agent",
             true,
@@ -211,7 +213,7 @@ export function createOrbynTools(userId: string) {
       inputSchema: z.object({ reminderId: z.string().min(1) }),
       execute: async ({ reminderId }) => {
         try {
-          const { reminder, changed } = await scheduleReminder(userId, reminderId, "agent");
+          const { reminder, changed } = await scheduleReminder(workspaceId, reminderId, "agent");
           return { reminderId: reminder.id, status: reminder.status, scheduledAt: reminder.scheduledAt.toISOString(), alreadyScheduled: !changed };
         } catch (error) {
           if (error instanceof ReminderError) return { error: error.message };
@@ -224,7 +226,7 @@ export function createOrbynTools(userId: string) {
       description: "List unpaid invoices that are past their due date, most overdue first.",
       inputSchema: z.object({}),
       execute: async () => {
-        const invoices = await getOverdueInvoices(userId);
+        const invoices = await getOverdueInvoices(workspaceId);
         return { invoices, totalMinor: invoices.reduce((sum, i) => sum + i.balanceMinor, 0), count: invoices.length };
       },
     }),
@@ -233,13 +235,13 @@ export function createOrbynTools(userId: string) {
       description:
         "Revenue (completed payments), comparison with the previous period, outstanding and overdue balances, and the clients owing the most.",
       inputSchema: summaryInput,
-      execute: async (input) => getFinancialSummary(userId, input),
+      execute: async (input) => getFinancialSummary(workspaceId, input),
     }),
 
     get_recent_transactions: tool({
       description: "Most recent payment transactions. source=SEEDED means demo data; PAYPAL_SANDBOX means a real sandbox capture.",
       inputSchema: recentTransactionsInput,
-      execute: async (input) => ({ transactions: await getRecentTransactions(userId, input) }),
+      execute: async (input) => ({ transactions: await getRecentTransactions(workspaceId, input) }),
     }),
   };
 }

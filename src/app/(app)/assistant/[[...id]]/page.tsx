@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { MessageSquare, Plus } from "lucide-react";
 import { AssistantChat } from "@/components/assistant/assistant-chat";
 import { createConversation, getConversation, listConversations } from "@/server/agent/conversations";
-import { requireUser } from "@/server/session";
+import { requireWorkspace } from "@/server/session";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Assistant" };
@@ -12,17 +12,19 @@ export const metadata = { title: "Assistant" };
 export const instant = false;
 
 export default async function AssistantPage({ params, searchParams }: PageProps<"/assistant/[[...id]]">) {
-  const user = await requireUser();
+  const { workspace } = await requireWorkspace();
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const requestedId = id?.[0];
 
   const conversation = requestedId
-    ? await getConversation(user.id, requestedId)
-    : { ...(await createConversation(user.id)), messages: [] };
+    ? await getConversation(workspace.id, requestedId)
+    : { ...(await createConversation(workspace.id)), messages: [] };
   if (!conversation) notFound();
 
-  const history = await listConversations(user.id);
+  const history = await listConversations(workspace.id);
   const prompt = typeof query.q === "string" ? query.q.slice(0, 500) : undefined;
+  // ?draft= fills the message box without sending, so the person reviews it first.
+  const draft = typeof query.draft === "string" ? query.draft.slice(0, 500) : undefined;
 
   return (
     <div className="flex">
@@ -60,6 +62,7 @@ export default async function AssistantPage({ params, searchParams }: PageProps<
           conversationId={conversation.id}
           initialMessages={conversation.messages}
           initialPrompt={prompt}
+          initialDraft={draft}
         />
       </div>
     </div>

@@ -16,10 +16,10 @@ export const STORY = {
 };
 
 export const STEPS = [
-  { title: "Say it", body: "Type what you need the way you would say it to a colleague." },
-  { title: "Review it", body: "Orbyn pulls out the client, amount, description and due date, and works out the totals on the server." },
-  { title: "Approve it", body: "Nothing is issued until you press Approve. Decline, and the draft simply waits." },
-  { title: "Get paid", body: "Your client pays through PayPal. The invoice turns paid only after PayPal confirms the money was captured." },
+  { title: "Intent", body: "Type what you need the way you would say it to a colleague." },
+  { title: "Plan", body: "Orbyn pulls out the client, amount, description and due date, and works out the totals on the server." },
+  { title: "Approve", body: "Nothing is issued until you press Approve. Decline, and the draft simply waits." },
+  { title: "Verified", body: "Your client pays through PayPal. The invoice turns paid only after PayPal confirms the money was captured." },
 ];
 
 export function ChatBubble() {

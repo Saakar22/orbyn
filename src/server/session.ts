@@ -1,67 +1,52 @@
 import "server-only";
-import { createHmac, timingSafeEqual } from "node:crypto";
-import { cookies } from "next/headers";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { auth } from "@/auth";
 import { db } from "@/server/db";
 
-export const SESSION_COOKIE = "orbyn_session";
-const MAX_AGE_SECONDS = 60 * 60 * 24 * 14;
+const TOUCH_AFTER_MS = 10 * 60_000;
 
-function secret() {
-  const value = process.env.SESSION_SECRET;
-  if (!value || value.length < 32) throw new Error("SESSION_SECRET must be set (32+ chars)");
-  return value;
-}
-
-function sign(payload: string) {
-  return createHmac("sha256", secret()).update(payload).digest("base64url");
-}
-
-export function encodeSession(userId: string) {
-  const payload = `${userId}.${Math.floor(Date.now() / 1000) + MAX_AGE_SECONDS}`;
-  return `${payload}.${sign(payload)}`;
-}
-
-export function decodeSession(token: string | undefined): string | null {
-  if (!token) return null;
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  const [userId, expires, signature] = parts;
-  const expected = Buffer.from(sign(`${userId}.${expires}`));
-  const actual = Buffer.from(signature);
-  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
-  if (Number(expires) < Date.now() / 1000) return null;
-  return userId;
-}
-
-export async function setSession(userId: string) {
-  (await cookies()).set(SESSION_COOKIE, encodeSession(userId), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: MAX_AGE_SECONDS,
-  });
-}
-
-export async function clearSession() {
-  (await cookies()).delete(SESSION_COOKIE);
-}
-
-export async function getSessionUserId() {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  // Checking expiry reads the clock, so this must run at request time, never in a prerender/prefetch pass.
+/**
+ * The signed-in person, the workspace they own and the id of this browser's session, or null.
+ *
+ * The Auth.js cookie only proves a session id was issued. The Session row is what makes it
+ * valid, so signing out elsewhere, a password reset or expiry take effect on the next request.
+ * Cached per request: layouts, pages and actions can all call it without repeating the lookup.
+ */
+export const getAuthContext = cache(async () => {
+  // Expiry compares against the clock, so this must run at request time, never in a prerender pass.
   await connection();
-  return decodeSession(token);
-}
+  const sid = (await auth())?.sid;
+  if (!sid) return null;
 
-/** For pages: redirect to the landing page if there is no valid session. */
-export async function requireUser() {
-  const userId = await getSessionUserId();
-  const user = userId ? await db.user.findUnique({ where: { id: userId } }) : null;
-  if (!user) redirect("/");
-  return user;
+  const session = await db.session.findUnique({
+    where: { id: sid },
+    include: { user: { include: { workspace: true } } },
+  });
+  const now = Date.now();
+  if (!session || session.expiresAt.getTime() <= now || !session.user.workspace) return null;
+
+  if (now - session.lastSeenAt.getTime() > TOUCH_AFTER_MS) {
+    await db.session.updateMany({ where: { id: sid }, data: { lastSeenAt: new Date(now) } });
+  }
+
+  // The password hash never leaves this module.
+  const { workspace, passwordHash, ...user } = session.user;
+  return { user: { ...user, hasPassword: Boolean(passwordHash) }, workspace, sessionId: sid };
+});
+
+export type AuthContext = NonNullable<Awaited<ReturnType<typeof getAuthContext>>>;
+
+/**
+ * For pages: the signed-in person and their workspace. Sends visitors to the login page, and
+ * people who haven't finished setting up to onboarding.
+ */
+export async function requireWorkspace(options: { allowOnboarding?: boolean } = {}): Promise<AuthContext> {
+  const context = await getAuthContext();
+  if (!context) redirect("/login");
+  if (!context.user.onboardedAt && !options.allowOnboarding) redirect("/onboarding");
+  return context;
 }
 
 export class UnauthorizedError extends Error {
@@ -70,9 +55,16 @@ export class UnauthorizedError extends Error {
   }
 }
 
-/** For route handlers: throw instead of redirecting. */
-export async function requireUserId() {
-  const userId = await getSessionUserId();
-  if (!userId) throw new UnauthorizedError();
-  return userId;
+/** For actions and route handlers: the caller's workspace id, or throw. Every query is scoped by it. */
+export async function requireWorkspaceId() {
+  const context = await getAuthContext();
+  if (!context) throw new UnauthorizedError();
+  return context.workspace.id;
+}
+
+/** For actions that act on the account itself. */
+export async function requireContext() {
+  const context = await getAuthContext();
+  if (!context) throw new UnauthorizedError();
+  return context;
 }

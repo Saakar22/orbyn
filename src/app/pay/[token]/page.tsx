@@ -41,7 +41,7 @@ async function PayContent({ params }: { params: PageProps<"/pay/[token]">["param
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
-      <InvoiceDocument invoice={{ ...invoice, status: displayStatus(invoice), issuer: invoice.user }} />
+      <InvoiceDocument invoice={{ ...invoice, status: displayStatus(invoice), issuer: { name: invoice.workspace.owner.name, businessName: invoice.workspace.name, email: invoice.workspace.owner.email } }} />
 
       <aside className="rounded-lg border bg-card p-5 lg:sticky lg:top-8">
         {payable ? (

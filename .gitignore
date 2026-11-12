@@ -48,3 +48,7 @@ next-env.d.ts
 .windsurf/
 .claude/
 skills-lock.json
+
+.vercel
+.env*
+!.env.example

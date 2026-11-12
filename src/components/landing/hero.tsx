@@ -3,6 +3,7 @@
 import { useRef, type CSSProperties } from "react";
 import { startDemo } from "@/app/actions/auth";
 import { DESKTOP, useScrollMotion, type MotionTools } from "./motion";
+import { PillLink } from "./pill";
 import { StartDemoButton } from "./start-demo-button";
 
 const delay = (i: number) => ({ "--i": i }) as CSSProperties;
@@ -112,10 +113,15 @@ export function Hero() {
               Tell Orbyn what you need in plain words. It drafts the invoice, waits for your approval, and marks it paid only
               when PayPal confirms the money arrived.
             </p>
-            <form action={startDemo} className="mt-6">
-              <StartDemoButton size="hero" />
-              <p className="hero-note">A private workspace with labelled demo data. No sign-up.</p>
-            </form>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <PillLink href="/signup" size="hero">
+                Get started — it&rsquo;s free
+              </PillLink>
+              <form action={startDemo}>
+                <StartDemoButton size="hero" tone="ghost" />
+              </form>
+            </div>
+            <p className="hero-note">The demo opens a private workspace with labelled sample data. No sign-up.</p>
           </div>
         </div>
 

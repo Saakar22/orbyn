@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { startDemo } from "@/app/actions/auth";
-import { StartDemoButton } from "./start-demo-button";
+import { useEffect, useRef, type ReactNode } from "react";
 
 const LINKS = [
   { href: "#story", label: "How it works" },
@@ -12,9 +10,10 @@ const LINKS = [
 /**
  * Fixed navigation. The links and wordmark are white with a difference blend (see landing.css),
  * so they read light over the night scenes and dark over paper without any scroll logic.
- * The demo button sits in its own fixed layer so it keeps its real colours.
+ * The primary button sits in its own fixed layer so it keeps its real colours.
+ * `login` and `cta` are server-rendered slots, because they depend on whether someone is signed in.
  */
-export function SiteNav() {
+export function SiteNav({ login, cta }: { login: ReactNode; cta: ReactNode }) {
   const ref = useRef<HTMLElement>(null);
 
   // Mark the link of the section currently being read.
@@ -62,10 +61,9 @@ export function SiteNav() {
         <a href="#top" className="site-nav-brand font-display" aria-label="Orbyn, back to top">
           Orbyn
         </a>
+        <div className="site-nav-account">{login}</div>
       </nav>
-      <form action={startDemo} className="site-nav-cta hero-fade">
-        <StartDemoButton size="nav" label="Live demo" />
-      </form>
+      <div className="site-nav-cta hero-fade">{cta}</div>
     </>
   );
 }

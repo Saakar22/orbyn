@@ -79,7 +79,7 @@ export function Playground() {
               setText(SAMPLE_PROMPTS[next]);
             }}
           >
-            Generate example
+            Try an example
           </button>
         </div>
 
@@ -115,7 +115,7 @@ export function Playground() {
               </div>
             ) : null}
 
-            <p className="playground-next">{text.trim() ? NEXT_STEP[preview.action] : "Start typing, or generate an example."}</p>
+            <p className="playground-next">{text.trim() ? NEXT_STEP[preview.action] : "Start typing, or try an example."}</p>
           </article>
           <p className="mt-3 text-[13px] text-[var(--ink-soft)]">Nothing you type here is sent or saved.</p>
         </div>

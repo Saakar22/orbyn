@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { balanceDue } from "@/lib/payments";
+import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/server/db";
 
 const DAY_MS = 86_400_000;
@@ -14,8 +15,12 @@ function periodRange(period: SummaryPeriod, now = new Date()) {
   const y = now.getFullYear();
   const m = now.getMonth();
   switch (period) {
-    case "this_month":
-      return { start: new Date(y, m, 1), end: now, prevStart: new Date(y, m - 1, 1), prevEnd: new Date(y, m, 1), label: "This month" };
+    case "this_month": {
+      // Compare like with like: the first N days of this month against the first N days of last month.
+      const sameMoment = new Date(y, m - 1, now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
+      const prevEnd = sameMoment < new Date(y, m, 1) ? sameMoment : new Date(y, m, 1);
+      return { start: new Date(y, m, 1), end: now, prevStart: new Date(y, m - 1, 1), prevEnd, label: "Month to date" };
+    }
     case "last_month":
       return { start: new Date(y, m - 1, 1), end: new Date(y, m, 1), prevStart: new Date(y, m - 2, 1), prevEnd: new Date(y, m - 1, 1), label: "Last month" };
     case "last_30_days":
@@ -25,9 +30,9 @@ function periodRange(period: SummaryPeriod, now = new Date()) {
   }
 }
 
-async function revenueBetween(userId: string, start: Date, end: Date) {
+async function revenueBetween(workspaceId: string, start: Date, end: Date) {
   const result = await db.transaction.aggregate({
-    where: { userId, status: "COMPLETED", createdAt: { gte: start, lt: end } },
+    where: { workspaceId, status: "COMPLETED", createdAt: { gte: start, lt: end } },
     _sum: { amountMinor: true, refundedMinor: true },
     _count: true,
   });
@@ -36,10 +41,10 @@ async function revenueBetween(userId: string, start: Date, end: Date) {
 }
 
 /** Outstanding = issued, unpaid invoices. Overdue = the subset past due. */
-export async function getOutstanding(userId: string) {
+export async function getOutstanding(workspaceId: string) {
   const now = new Date();
   const rows = await db.invoice.findMany({
-    where: { userId, status: { in: ["PENDING", "OVERDUE"] } },
+    where: { workspaceId, status: { in: ["PENDING", "OVERDUE"] } },
     select: {
       id: true,
       invoiceNumber: true,
@@ -72,15 +77,19 @@ export async function getOutstanding(userId: string) {
   };
 }
 
-export async function getFinancialSummary(userId: string, raw: z.input<typeof summaryInput> = {}) {
+export async function getFinancialSummary(workspaceId: string, raw: z.input<typeof summaryInput> = {}) {
   const { period } = summaryInput.parse(raw);
   const range = periodRange(period);
   const [current, previous, outstanding, paidInPeriod, issuedInPeriod] = await Promise.all([
-    revenueBetween(userId, range.start, range.end),
-    revenueBetween(userId, range.prevStart, range.prevEnd),
-    getOutstanding(userId),
-    db.invoice.count({ where: { userId, status: "PAID", paidAt: { gte: range.start, lt: range.end } } }),
-    db.invoice.count({ where: { userId, status: { not: "DRAFT" }, issueDate: { gte: range.start, lt: range.end } } }),
+    revenueBetween(workspaceId, range.start, range.end),
+    revenueBetween(workspaceId, range.prevStart, range.prevEnd),
+    getOutstanding(workspaceId),
+    db.invoice.count({ where: { workspaceId, status: "PAID", paidAt: { gte: range.start, lt: range.end } } }),
+    db.invoice.aggregate({
+      where: { workspaceId, status: { notIn: ["DRAFT", "CANCELLED"] }, issueDate: { gte: range.start, lt: range.end } },
+      _count: true,
+      _sum: { totalMinor: true },
+    }),
   ]);
 
   const change = previous.amountMinor > 0 ? (current.amountMinor - previous.amountMinor) / previous.amountMinor : null;
@@ -94,8 +103,10 @@ export async function getFinancialSummary(userId: string, raw: z.input<typeof su
     paymentsCount: current.count,
     previousRevenueMinor: previous.amountMinor,
     revenueChangePct: change === null ? null : Math.round(change * 1000) / 10,
+    previousRange: { start: range.prevStart.toISOString(), end: range.prevEnd.toISOString() },
     invoicesPaid: paidInPeriod,
-    invoicesIssued: issuedInPeriod,
+    invoicesIssued: issuedInPeriod._count,
+    invoicedMinor: issuedInPeriod._sum.totalMinor ?? 0,
     outstandingMinor: outstanding.outstandingMinor,
     outstandingCount: outstanding.outstandingCount,
     overdueMinor: outstanding.overdueMinor,
@@ -104,9 +115,9 @@ export async function getFinancialSummary(userId: string, raw: z.input<typeof su
   };
 }
 
-export async function getOverdueInvoices(userId: string) {
+export async function getOverdueInvoices(workspaceId: string) {
   const now = Date.now();
-  const { unpaid } = await getOutstanding(userId);
+  const { unpaid } = await getOutstanding(workspaceId);
   return unpaid
     .filter((invoice) => invoice.dueDate.getTime() < now)
     .map((invoice) => ({
@@ -124,11 +135,11 @@ export async function getOverdueInvoices(userId: string) {
 }
 
 /** Completed revenue per calendar month, oldest first, for the dashboard chart. */
-export async function getMonthlyRevenue(userId: string, months = 6) {
+export async function getMonthlyRevenue(workspaceId: string, months = 6) {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
   const rows = await db.transaction.findMany({
-    where: { userId, status: "COMPLETED", createdAt: { gte: start } },
+    where: { workspaceId, status: "COMPLETED", createdAt: { gte: start } },
     select: { amountMinor: true, refundedMinor: true, createdAt: true },
   });
   const buckets = Array.from({ length: months }, (_, i) => {
@@ -144,10 +155,10 @@ export async function getMonthlyRevenue(userId: string, months = 6) {
 
 export const recentTransactionsInput = z.object({ limit: z.number().int().min(1).max(25).default(5) });
 
-export async function getRecentTransactions(userId: string, raw: z.input<typeof recentTransactionsInput> = {}) {
+export async function getRecentTransactions(workspaceId: string, raw: z.input<typeof recentTransactionsInput> = {}) {
   const { limit } = recentTransactionsInput.parse(raw);
   const rows = await db.transaction.findMany({
-    where: { userId },
+    where: { workspaceId },
     orderBy: { createdAt: "desc" },
     take: limit,
     include: { invoice: { select: { invoiceNumber: true, client: { select: { name: true } } } } },
@@ -165,4 +176,65 @@ export async function getRecentTransactions(userId: string, raw: z.input<typeof 
     client: row.invoice?.client.name ?? null,
     createdAt: row.createdAt.toISOString(),
   }));
+}
+
+export const transactionFiltersInput = z.object({
+  source: z.enum(["all", "verified", "demo"]).default("all"),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+  query: z.string().trim().max(100).optional(),
+});
+export type TransactionFilters = z.infer<typeof transactionFiltersInput>;
+
+function transactionFilter(workspaceId: string, filters: TransactionFilters): Prisma.TransactionWhereInput {
+  const where: Prisma.TransactionWhereInput = { workspaceId };
+  if (filters.source === "verified") where.source = "PAYPAL_SANDBOX";
+  if (filters.source === "demo") where.source = "SEEDED";
+  if (filters.from || filters.to) {
+    // `to` is a calendar day, so include all of it.
+    const end = filters.to ? new Date(filters.to.getTime() + DAY_MS) : undefined;
+    where.createdAt = { ...(filters.from ? { gte: filters.from } : {}), ...(end ? { lt: end } : {}) };
+  }
+  if (filters.query) {
+    where.OR = [
+      { captureId: { contains: filters.query, mode: "insensitive" } },
+      { paypalOrderId: { contains: filters.query, mode: "insensitive" } },
+      { payerEmail: { contains: filters.query, mode: "insensitive" } },
+      { invoice: { invoiceNumber: { contains: filters.query, mode: "insensitive" } } },
+      { invoice: { client: { name: { contains: filters.query, mode: "insensitive" } } } },
+    ];
+  }
+  return where;
+}
+
+/** One page of transactions plus totals for everything that matches the filters. */
+export async function listTransactions(workspaceId: string, filters: TransactionFilters, page: { take: number; skip: number }) {
+  const where = transactionFilter(workspaceId, filters);
+  const [rows, count, totals] = await Promise.all([
+    db.transaction.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: page.take,
+      skip: page.skip,
+      include: { invoice: { select: { id: true, invoiceNumber: true, client: { select: { name: true } } } } },
+    }),
+    db.transaction.count({ where }),
+    db.transaction.aggregate({ where: { ...where, status: { in: ["COMPLETED", "REFUNDED"] } }, _sum: { amountMinor: true, refundedMinor: true } }),
+  ]);
+  return {
+    rows,
+    count,
+    netMinor: (totals._sum.amountMinor ?? 0) - (totals._sum.refundedMinor ?? 0),
+    refundedMinor: totals._sum.refundedMinor ?? 0,
+  };
+}
+
+/** Every matching transaction, for CSV export. Capped so a single request stays cheap. */
+export function exportTransactions(workspaceId: string, filters: TransactionFilters) {
+  return db.transaction.findMany({
+    where: transactionFilter(workspaceId, filters),
+    orderBy: { createdAt: "desc" },
+    take: 5000,
+    include: { invoice: { select: { invoiceNumber: true, client: { select: { name: true } } } } },
+  });
 }

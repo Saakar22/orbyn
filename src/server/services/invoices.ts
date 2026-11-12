@@ -40,21 +40,21 @@ export type InvoiceDraft = {
   dueDate: string;
 };
 
-export async function findClientByName(userId: string, name: string) {
+export async function findClientByName(workspaceId: string, name: string) {
   const exact = await db.client.findFirst({
-    where: { userId, name: { equals: name.trim(), mode: "insensitive" } },
+    where: { workspaceId, name: { equals: name.trim(), mode: "insensitive" } },
   });
   if (exact) return { match: exact, candidates: [exact] };
   const candidates = await db.client.findMany({
-    where: { userId, name: { contains: name.trim(), mode: "insensitive" } },
+    where: { workspaceId, name: { contains: name.trim(), mode: "insensitive" } },
     take: 5,
   });
   return { match: candidates.length === 1 ? candidates[0] : null, candidates };
 }
 
-export async function buildInvoiceDraft(userId: string, raw: CreateInvoiceInput): Promise<InvoiceDraft> {
+export async function buildInvoiceDraft(workspaceId: string, raw: CreateInvoiceInput): Promise<InvoiceDraft> {
   const input = createInvoiceInput.parse(raw);
-  const { match } = await findClientByName(userId, input.clientName);
+  const { match } = await findClientByName(workspaceId, input.clientName);
   const items = input.items.map((item) => ({
     description: item.description,
     quantity: item.quantity,
@@ -82,8 +82,8 @@ export async function buildInvoiceDraft(userId: string, raw: CreateInvoiceInput)
   };
 }
 
-async function nextInvoiceNumber(tx: Prisma.TransactionClient, userId: string) {
-  const count = await tx.invoice.count({ where: { userId } });
+async function nextInvoiceNumber(tx: Prisma.TransactionClient, workspaceId: string) {
+  const count = await tx.invoice.count({ where: { workspaceId } });
   return `INV-${String(count + 1).padStart(4, "0")}`;
 }
 
@@ -92,7 +92,7 @@ async function nextInvoiceNumber(tx: Prisma.TransactionClient, userId: string) {
  * approve via issueInvoice. Totals are re-derived here, never trusted from the caller.
  */
 export async function saveInvoiceDraft(
-  userId: string,
+  workspaceId: string,
   draft: InvoiceDraft,
   actor: Actor,
   status: "DRAFT" | "PENDING" = "PENDING",
@@ -101,12 +101,12 @@ export async function saveInvoiceDraft(
 
   return db.$transaction(async (tx) => {
     const client =
-      (draft.client.id && (await tx.client.findFirst({ where: { id: draft.client.id, userId } }))) ||
+      (draft.client.id && (await tx.client.findFirst({ where: { id: draft.client.id, workspaceId } }))) ||
       (await tx.client.upsert({
-        where: { userId_name: { userId, name: draft.client.name } },
+        where: { workspaceId_name: { workspaceId, name: draft.client.name } },
         update: {},
         create: {
-          userId,
+          workspaceId,
           name: draft.client.name,
           email: draft.client.email,
           company: draft.client.company,
@@ -116,9 +116,9 @@ export async function saveInvoiceDraft(
 
     const invoice = await tx.invoice.create({
       data: {
-        userId,
+        workspaceId,
         clientId: client.id,
-        invoiceNumber: await nextInvoiceNumber(tx, userId),
+        invoiceNumber: await nextInvoiceNumber(tx, workspaceId),
         description: draft.description,
         currency: draft.currency,
         subtotalMinor: totals.subtotalMinor,
@@ -144,7 +144,7 @@ export async function saveInvoiceDraft(
 
     await audit(
       {
-        userId,
+        workspaceId,
         actor,
         action: status === "DRAFT" ? "invoice.drafted" : "invoice.created",
         entityType: "Invoice",
@@ -168,12 +168,12 @@ export const listInvoicesInput = z.object({
   clientName: z.string().trim().max(100).optional(),
   query: z.string().trim().max(100).optional(),
   limit: z.number().int().min(1).max(100).default(50),
+  offset: z.number().int().min(0).default(0),
 });
 
-export async function listInvoices(userId: string, raw: z.input<typeof listInvoicesInput> = {}) {
-  const input = listInvoicesInput.parse(raw);
+function invoiceFilter(workspaceId: string, input: z.output<typeof listInvoicesInput>) {
   const now = new Date();
-  const where: Prisma.InvoiceWhereInput = { userId };
+  const where: Prisma.InvoiceWhereInput = { workspaceId };
 
   if (input.status === "OVERDUE") {
     where.OR = [{ status: "OVERDUE" }, { status: "PENDING", dueDate: { lt: now } }];
@@ -198,19 +198,39 @@ export async function listInvoices(userId: string, raw: z.input<typeof listInvoi
     ];
   }
 
+  return where;
+}
+
+export async function listInvoices(workspaceId: string, raw: z.input<typeof listInvoicesInput> = {}) {
+  const input = listInvoicesInput.parse(raw);
   const invoices = await db.invoice.findMany({
-    where,
+    where: invoiceFilter(workspaceId, input),
     include: { client: true },
-    orderBy: { issueDate: "desc" },
+    orderBy: [{ issueDate: "desc" }, { invoiceNumber: "desc" }],
     take: input.limit,
+    skip: input.offset,
   });
   return invoices.map((invoice) => ({ ...invoice, status: effectiveStatus(invoice) }));
 }
 
-export async function getInvoice(userId: string, ref: { id?: string; invoiceNumber?: string }) {
+export const INVOICE_TABS = ["ALL", "UNPAID", "OVERDUE", "PENDING", "PAID", "DRAFT", "CANCELLED"] as const;
+export type InvoiceTab = (typeof INVOICE_TABS)[number];
+
+/** How many invoices each filter tab holds, for the given search. */
+export async function countInvoicesByTab(workspaceId: string, query?: string) {
+  const entries = await Promise.all(
+    INVOICE_TABS.map(async (tab) => {
+      const input = listInvoicesInput.parse({ status: tab === "ALL" ? undefined : tab, query });
+      return [tab, await db.invoice.count({ where: invoiceFilter(workspaceId, input) })] as const;
+    }),
+  );
+  return Object.fromEntries(entries) as Record<InvoiceTab, number>;
+}
+
+export async function getInvoice(workspaceId: string, ref: { id?: string; invoiceNumber?: string }) {
   if (!ref.id && !ref.invoiceNumber) return null;
   const invoice = await db.invoice.findFirst({
-    where: { userId, ...(ref.id ? { id: ref.id } : { invoiceNumber: ref.invoiceNumber!.toUpperCase() }) },
+    where: { workspaceId, ...(ref.id ? { id: ref.id } : { invoiceNumber: ref.invoiceNumber!.toUpperCase() }) },
     include: {
       client: true,
       items: { orderBy: { position: "asc" } },
@@ -223,9 +243,9 @@ export async function getInvoice(userId: string, ref: { id?: string; invoiceNumb
 }
 
 /** DRAFT -> PENDING. Called only after the user approved the agent's issue_invoice request. */
-export async function issueInvoice(userId: string, invoiceId: string, actor: Actor) {
+export async function issueInvoice(workspaceId: string, invoiceId: string, actor: Actor) {
   return db.$transaction(async (tx) => {
-    const invoice = await tx.invoice.findFirst({ where: { id: invoiceId, userId }, include: { client: true } });
+    const invoice = await tx.invoice.findFirst({ where: { id: invoiceId, workspaceId }, include: { client: true } });
     if (!invoice) throw new Error("Invoice not found");
     if (invoice.status !== "DRAFT") {
       // Idempotent: issuing twice is a no-op rather than an error.
@@ -238,7 +258,7 @@ export async function issueInvoice(userId: string, invoiceId: string, actor: Act
     });
     await audit(
       {
-        userId,
+        workspaceId,
         actor,
         action: "invoice.issued",
         entityType: "Invoice",
@@ -258,8 +278,8 @@ const MANUAL_TRANSITIONS: Partial<Record<InvoiceStatus, InvoiceStatus[]>> = {
   OVERDUE: ["CANCELLED"],
 };
 
-export async function setInvoiceStatus(userId: string, id: string, next: InvoiceStatus, actor: Actor) {
-  const invoice = await db.invoice.findFirst({ where: { id, userId } });
+export async function setInvoiceStatus(workspaceId: string, id: string, next: InvoiceStatus, actor: Actor) {
+  const invoice = await db.invoice.findFirst({ where: { id, workspaceId } });
   if (!invoice) throw new Error("Invoice not found");
   if (!MANUAL_TRANSITIONS[invoice.status]?.includes(next)) {
     throw new Error(`Cannot change invoice from ${invoice.status} to ${next}`);
@@ -273,7 +293,7 @@ export async function setInvoiceStatus(userId: string, id: string, next: Invoice
       });
     }
     await audit(
-      { userId, actor, action: `invoice.${next.toLowerCase()}`, entityType: "Invoice", entityId: id },
+      { workspaceId, actor, action: `invoice.${next.toLowerCase()}`, entityType: "Invoice", entityId: id },
       tx,
     );
     return updated;
