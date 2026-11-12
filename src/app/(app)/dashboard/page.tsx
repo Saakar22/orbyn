@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowRight, BellRing, CheckCircle2, MessageSquarePlus, Sparkles } from "lucide-react";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
-import { EmptyState } from "@/components/empty-state";
-import { KpiCard } from "@/components/kpi-card";
-import { PageContainer, PageHeader } from "@/components/page-header";
-import { SourceBadge, StatusBadge } from "@/components/status-badge";
+import { EmptyState } from "@/components/shared/empty-state";
+import { KpiCard } from "@/components/shared/kpi-card";
+import { PageContainer, PageHeader } from "@/components/shared/page-header";
+import { SourceBadge, StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { daysUntil, describeDue, formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/money";

@@ -13,7 +13,7 @@ import {
   updateProfileAction,
   type SettingsState,
 } from "@/app/actions/settings";
-import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";

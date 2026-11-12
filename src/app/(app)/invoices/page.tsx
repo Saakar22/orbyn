@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowUpRight, FileText, FlaskConical, Plus } from "lucide-react";
-import { DataTable, type Column } from "@/components/data-table";
-import { EmptyState } from "@/components/empty-state";
-import { FilterTabs, Pagination, SearchBox } from "@/components/list-controls";
-import { PageContainer, PageHeader } from "@/components/page-header";
-import { amountClass, SourceBadge, StatusBadge } from "@/components/status-badge";
+import { DataTable, type Column } from "@/components/shared/data-table";
+import { EmptyState } from "@/components/shared/empty-state";
+import { FilterTabs, Pagination, SearchBox } from "@/components/shared/list-controls";
+import { PageContainer, PageHeader } from "@/components/shared/page-header";
+import { amountClass, SourceBadge, StatusBadge } from "@/components/shared/status-badge";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { describeDue, formatDate } from "@/lib/format";

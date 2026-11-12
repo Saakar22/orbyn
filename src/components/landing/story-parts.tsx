@@ -1,5 +1,5 @@
 import { Check, ShieldCheck } from "lucide-react";
-import { SourceBadge, StatusBadge } from "@/components/status-badge";
+import { SourceBadge, StatusBadge } from "@/components/shared/status-badge";
 
 // Presentational pieces for the "how it works" story. They mirror the real assistant UI
 // (same badges, same structure) but are static illustrations with sample data.

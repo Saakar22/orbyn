@@ -1,5 +1,5 @@
 import { OrbynMark } from "@/components/brand/orbyn-mark";
-import { StatusBadge } from "@/components/status-badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
 

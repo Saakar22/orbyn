@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, ExternalLink, FileText } from "lucide-react";
 import type { ReactNode } from "react";
-import { SourceBadge, StatusBadge } from "@/components/status-badge";
+import { SourceBadge, StatusBadge } from "@/components/shared/status-badge";
 import { describeDue, formatDate, formatDateTime } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
