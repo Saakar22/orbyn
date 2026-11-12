@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { ArrowLeftRight, Download } from "lucide-react";
-import { CopyText } from "@/components/copy-text";
-import { DataTable, type Column } from "@/components/data-table";
-import { EmptyState } from "@/components/empty-state";
-import { FilterTabs, Pagination, SearchBox } from "@/components/list-controls";
-import { PageContainer, PageHeader } from "@/components/page-header";
-import { SourceBadge, StatusBadge } from "@/components/status-badge";
+import { CopyText } from "@/components/shared/copy-text";
+import { DataTable, type Column } from "@/components/shared/data-table";
+import { EmptyState } from "@/components/shared/empty-state";
+import { FilterTabs, Pagination, SearchBox } from "@/components/shared/list-controls";
+import { PageContainer, PageHeader } from "@/components/shared/page-header";
+import { SourceBadge, StatusBadge } from "@/components/shared/status-badge";
 import { DateRange } from "@/components/transactions/date-range";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";

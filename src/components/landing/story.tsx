@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { StatusBadge } from "@/components/status-badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { DESKTOP, MOTION_OK, useScrollMotion, type MotionTools } from "./motion";
 import { ApprovalBar, CardHeader, ChatBubble, PlanFields, Receipt, STEPS, Thinking } from "./story-parts";
 

@@ -1,5 +1,5 @@
 import { NewInvoiceForm } from "@/components/invoices/new-invoice-form";
-import { PageContainer, PageHeader } from "@/components/page-header";
+import { PageContainer, PageHeader } from "@/components/shared/page-header";
 import { dateInputFromToday } from "@/lib/format";
 import { db } from "@/server/db";
 import { requireWorkspace } from "@/server/session";

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { CheckCircle2, CircleDashed } from "lucide-react";
-import { PageContainer, PageHeader } from "@/components/page-header";
+import { PageContainer, PageHeader } from "@/components/shared/page-header";
 import { BusinessForm, Panel, PasswordForm, ProfileForm, SessionsPanel, WorkspaceDanger } from "@/components/settings/settings-forms";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from "@/lib/format";

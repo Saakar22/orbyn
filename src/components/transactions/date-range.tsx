@@ -1,6 +1,6 @@
 "use client";
 
-import { useQueryState } from "@/components/list-controls";
+import { useQueryState } from "@/components/shared/list-controls";
 import { Input } from "@/components/ui/input";
 
 /** From/to day pickers that write ?from= and ?to= to the URL. */
