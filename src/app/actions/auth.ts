@@ -110,7 +110,7 @@ export async function forgotPasswordAction(_prev: AuthFormState, formData: FormD
 
   // Past the per-account limit we stay quiet and send nothing, so the response never reveals whether the account exists.
   if (perAccount.ok) {
-    const reset = await createPasswordReset(parsed.data.email, process.env.APP_URL || "http://localhost:3000");
+    const reset = await createPasswordReset(parsed.data.email, process.env.APP_URL || "http://localhost:3200");
     if (reset) deliverResetLink(reset.email, reset.link);
   }
   return { sent: true };

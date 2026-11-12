@@ -23,6 +23,8 @@ export default async function AssistantPage({ params, searchParams }: PageProps<
 
   const history = await listConversations(workspace.id);
   const prompt = typeof query.q === "string" ? query.q.slice(0, 500) : undefined;
+  // ?draft= fills the message box without sending, so the person reviews it first.
+  const draft = typeof query.draft === "string" ? query.draft.slice(0, 500) : undefined;
 
   return (
     <div className="flex">
@@ -60,6 +62,7 @@ export default async function AssistantPage({ params, searchParams }: PageProps<
           conversationId={conversation.id}
           initialMessages={conversation.messages}
           initialPrompt={prompt}
+          initialDraft={draft}
         />
       </div>
     </div>

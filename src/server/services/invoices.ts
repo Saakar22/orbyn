@@ -168,10 +168,10 @@ export const listInvoicesInput = z.object({
   clientName: z.string().trim().max(100).optional(),
   query: z.string().trim().max(100).optional(),
   limit: z.number().int().min(1).max(100).default(50),
+  offset: z.number().int().min(0).default(0),
 });
 
-export async function listInvoices(workspaceId: string, raw: z.input<typeof listInvoicesInput> = {}) {
-  const input = listInvoicesInput.parse(raw);
+function invoiceFilter(workspaceId: string, input: z.output<typeof listInvoicesInput>) {
   const now = new Date();
   const where: Prisma.InvoiceWhereInput = { workspaceId };
 
@@ -198,13 +198,33 @@ export async function listInvoices(workspaceId: string, raw: z.input<typeof list
     ];
   }
 
+  return where;
+}
+
+export async function listInvoices(workspaceId: string, raw: z.input<typeof listInvoicesInput> = {}) {
+  const input = listInvoicesInput.parse(raw);
   const invoices = await db.invoice.findMany({
-    where,
+    where: invoiceFilter(workspaceId, input),
     include: { client: true },
-    orderBy: { issueDate: "desc" },
+    orderBy: [{ issueDate: "desc" }, { invoiceNumber: "desc" }],
     take: input.limit,
+    skip: input.offset,
   });
   return invoices.map((invoice) => ({ ...invoice, status: effectiveStatus(invoice) }));
+}
+
+export const INVOICE_TABS = ["ALL", "UNPAID", "OVERDUE", "PENDING", "PAID", "DRAFT", "CANCELLED"] as const;
+export type InvoiceTab = (typeof INVOICE_TABS)[number];
+
+/** How many invoices each filter tab holds, for the given search. */
+export async function countInvoicesByTab(workspaceId: string, query?: string) {
+  const entries = await Promise.all(
+    INVOICE_TABS.map(async (tab) => {
+      const input = listInvoicesInput.parse({ status: tab === "ALL" ? undefined : tab, query });
+      return [tab, await db.invoice.count({ where: invoiceFilter(workspaceId, input) })] as const;
+    }),
+  );
+  return Object.fromEntries(entries) as Record<InvoiceTab, number>;
 }
 
 export async function getInvoice(workspaceId: string, ref: { id?: string; invoiceNumber?: string }) {

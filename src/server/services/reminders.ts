@@ -20,7 +20,7 @@ export const reminderInput = z.object({
 export type ReminderInput = z.input<typeof reminderInput>;
 
 export function payUrl(publicToken: string) {
-  return new URL(`/pay/${publicToken}`, process.env.APP_URL || "http://localhost:3000").toString();
+  return new URL(`/pay/${publicToken}`, process.env.APP_URL || "http://localhost:3200").toString();
 }
 
 async function loadOpenInvoice(workspaceId: string, invoiceId: string) {

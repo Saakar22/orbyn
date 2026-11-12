@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { assistantModel } from "@/server/agent/model";
 import {
   convertToModelMessages,
   createUIMessageStreamResponse,
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
   ]);
 
   const result = streamText({
-    model: google(process.env.GEMINI_MODEL || "gemini-flash-latest"),
+    model: assistantModel(),
     instructions: buildInstructions({
       userName: workspace.owner.name,
       businessName: workspace.name,

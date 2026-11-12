@@ -1,33 +1,8 @@
-import { LogOut } from "lucide-react";
-import { signOutAction } from "@/app/actions/auth";
+import { UserMenu } from "@/components/shell/user-menu";
 import { requireWorkspace } from "@/server/session";
 
+/** Server side of the account menu: reads who is signed in and hands only display fields to the client. */
 export async function UserBlock() {
-  const { user, workspace } = await requireWorkspace();
-  const initials = user.name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2);
-
-  return (
-    <div className="flex items-center gap-2.5 rounded-md px-1.5 py-1.5">
-      <div className="flex size-7 items-center justify-center rounded-full bg-sidebar-accent text-[11px] font-semibold text-sidebar-accent-foreground">
-        {initials}
-      </div>
-      <div className="min-w-0 flex-1 leading-tight">
-        <div className="truncate text-[13px] font-medium text-sidebar-accent-foreground">{user.name}</div>
-        <div className="truncate text-[11px] text-sidebar-foreground/70">{workspace.name}</div>
-      </div>
-      <form action={signOutAction}>
-        <button
-          type="submit"
-          aria-label="Sign out"
-          className="rounded p-1 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        >
-          <LogOut className="size-3.5" />
-        </button>
-      </form>
-    </div>
-  );
+  const { user, workspace } = await requireWorkspace({ allowOnboarding: true });
+  return <UserMenu name={user.name} business={workspace.name} email={user.email} isGuest={user.isGuest} />;
 }

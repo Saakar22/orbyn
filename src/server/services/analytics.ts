@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { balanceDue } from "@/lib/payments";
+import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/server/db";
 
 const DAY_MS = 86_400_000;
@@ -14,8 +15,12 @@ function periodRange(period: SummaryPeriod, now = new Date()) {
   const y = now.getFullYear();
   const m = now.getMonth();
   switch (period) {
-    case "this_month":
-      return { start: new Date(y, m, 1), end: now, prevStart: new Date(y, m - 1, 1), prevEnd: new Date(y, m, 1), label: "This month" };
+    case "this_month": {
+      // Compare like with like: the first N days of this month against the first N days of last month.
+      const sameMoment = new Date(y, m - 1, now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
+      const prevEnd = sameMoment < new Date(y, m, 1) ? sameMoment : new Date(y, m, 1);
+      return { start: new Date(y, m, 1), end: now, prevStart: new Date(y, m - 1, 1), prevEnd, label: "Month to date" };
+    }
     case "last_month":
       return { start: new Date(y, m - 1, 1), end: new Date(y, m, 1), prevStart: new Date(y, m - 2, 1), prevEnd: new Date(y, m - 1, 1), label: "Last month" };
     case "last_30_days":
@@ -80,7 +85,11 @@ export async function getFinancialSummary(workspaceId: string, raw: z.input<type
     revenueBetween(workspaceId, range.prevStart, range.prevEnd),
     getOutstanding(workspaceId),
     db.invoice.count({ where: { workspaceId, status: "PAID", paidAt: { gte: range.start, lt: range.end } } }),
-    db.invoice.count({ where: { workspaceId, status: { not: "DRAFT" }, issueDate: { gte: range.start, lt: range.end } } }),
+    db.invoice.aggregate({
+      where: { workspaceId, status: { notIn: ["DRAFT", "CANCELLED"] }, issueDate: { gte: range.start, lt: range.end } },
+      _count: true,
+      _sum: { totalMinor: true },
+    }),
   ]);
 
   const change = previous.amountMinor > 0 ? (current.amountMinor - previous.amountMinor) / previous.amountMinor : null;
@@ -94,8 +103,10 @@ export async function getFinancialSummary(workspaceId: string, raw: z.input<type
     paymentsCount: current.count,
     previousRevenueMinor: previous.amountMinor,
     revenueChangePct: change === null ? null : Math.round(change * 1000) / 10,
+    previousRange: { start: range.prevStart.toISOString(), end: range.prevEnd.toISOString() },
     invoicesPaid: paidInPeriod,
-    invoicesIssued: issuedInPeriod,
+    invoicesIssued: issuedInPeriod._count,
+    invoicedMinor: issuedInPeriod._sum.totalMinor ?? 0,
     outstandingMinor: outstanding.outstandingMinor,
     outstandingCount: outstanding.outstandingCount,
     overdueMinor: outstanding.overdueMinor,
@@ -165,4 +176,65 @@ export async function getRecentTransactions(workspaceId: string, raw: z.input<ty
     client: row.invoice?.client.name ?? null,
     createdAt: row.createdAt.toISOString(),
   }));
+}
+
+export const transactionFiltersInput = z.object({
+  source: z.enum(["all", "verified", "demo"]).default("all"),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+  query: z.string().trim().max(100).optional(),
+});
+export type TransactionFilters = z.infer<typeof transactionFiltersInput>;
+
+function transactionFilter(workspaceId: string, filters: TransactionFilters): Prisma.TransactionWhereInput {
+  const where: Prisma.TransactionWhereInput = { workspaceId };
+  if (filters.source === "verified") where.source = "PAYPAL_SANDBOX";
+  if (filters.source === "demo") where.source = "SEEDED";
+  if (filters.from || filters.to) {
+    // `to` is a calendar day, so include all of it.
+    const end = filters.to ? new Date(filters.to.getTime() + DAY_MS) : undefined;
+    where.createdAt = { ...(filters.from ? { gte: filters.from } : {}), ...(end ? { lt: end } : {}) };
+  }
+  if (filters.query) {
+    where.OR = [
+      { captureId: { contains: filters.query, mode: "insensitive" } },
+      { paypalOrderId: { contains: filters.query, mode: "insensitive" } },
+      { payerEmail: { contains: filters.query, mode: "insensitive" } },
+      { invoice: { invoiceNumber: { contains: filters.query, mode: "insensitive" } } },
+      { invoice: { client: { name: { contains: filters.query, mode: "insensitive" } } } },
+    ];
+  }
+  return where;
+}
+
+/** One page of transactions plus totals for everything that matches the filters. */
+export async function listTransactions(workspaceId: string, filters: TransactionFilters, page: { take: number; skip: number }) {
+  const where = transactionFilter(workspaceId, filters);
+  const [rows, count, totals] = await Promise.all([
+    db.transaction.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: page.take,
+      skip: page.skip,
+      include: { invoice: { select: { id: true, invoiceNumber: true, client: { select: { name: true } } } } },
+    }),
+    db.transaction.count({ where }),
+    db.transaction.aggregate({ where: { ...where, status: { in: ["COMPLETED", "REFUNDED"] } }, _sum: { amountMinor: true, refundedMinor: true } }),
+  ]);
+  return {
+    rows,
+    count,
+    netMinor: (totals._sum.amountMinor ?? 0) - (totals._sum.refundedMinor ?? 0),
+    refundedMinor: totals._sum.refundedMinor ?? 0,
+  };
+}
+
+/** Every matching transaction, for CSV export. Capped so a single request stays cheap. */
+export function exportTransactions(workspaceId: string, filters: TransactionFilters) {
+  return db.transaction.findMany({
+    where: transactionFilter(workspaceId, filters),
+    orderBy: { createdAt: "desc" },
+    take: 5000,
+    include: { invoice: { select: { invoiceNumber: true, client: { select: { name: true } } } } },
+  });
 }
