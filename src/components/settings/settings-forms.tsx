@@ -20,7 +20,6 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { PasswordInput } from "@/components/ui/password-input";
-import { formatDate } from "@/lib/format";
 import { CURRENCIES } from "@/lib/workspace-options";
 
 const CONTROL = "h-10 rounded-lg";
@@ -165,7 +164,8 @@ export function PasswordForm({ hasPassword, isGuest }: { hasPassword: boolean; i
   );
 }
 
-type SessionRow = { id: string; userAgent: string | null; createdAt: Date; lastSeenAt: Date };
+/** Dates arrive already formatted on the server, in the workspace time zone, so server and browser render the same text. */
+type SessionRow = { id: string; userAgent: string | null; signedIn: string; lastActive: string };
 
 function describeDevice(agent: string | null) {
   if (!agent) return { label: "Unknown device", phone: false };
@@ -214,7 +214,7 @@ export function SessionsPanel({ sessions, currentId }: { sessions: SessionRow[];
                   {session.id === currentId ? <span className="ml-2 rounded bg-success-soft px-1.5 py-px text-[11px] font-medium text-success">This device</span> : null}
                 </span>
                 <span className="block text-xs text-muted-foreground">
-                  Signed in {formatDate(session.createdAt)} · last active {formatDate(session.lastSeenAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                  Signed in {session.signedIn} · last active {session.lastActive}
                 </span>
               </span>
             </li>

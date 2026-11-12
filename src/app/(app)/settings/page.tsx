@@ -3,6 +3,7 @@ import { CheckCircle2, CircleDashed } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { BusinessForm, Panel, PasswordForm, ProfileForm, SessionsPanel, WorkspaceDanger } from "@/components/settings/settings-forms";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDate } from "@/lib/format";
 import { listSessions } from "@/server/auth/accounts";
 import { paypalStatus } from "@/server/paypal/status";
 import { requireWorkspace } from "@/server/session";
@@ -27,7 +28,13 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
   const { user, workspace, sessionId } = await requireWorkspace();
   const { tab } = await searchParams;
   const initial = TABS.find((value) => value === tab) ?? "profile";
-  const sessions = await listSessions(user.id);
+  const zone = { timeZone: workspace.timezone };
+  const sessions = (await listSessions(user.id)).map((session) => ({
+    id: session.id,
+    userAgent: session.userAgent,
+    signedIn: formatDate(session.createdAt, { month: "short", day: "numeric", year: "numeric", ...zone }),
+    lastActive: formatDate(session.lastSeenAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", ...zone }),
+  }));
   const paypal = paypalStatus();
 
   return (
