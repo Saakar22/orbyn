@@ -127,7 +127,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
           label="Filter invoices by status"
           options={INVOICE_TABS.map((value) => ({ value, label: TAB_LABELS[value], count: counts[value] }))}
         />
-        <SearchBox label="Search invoices" placeholder="Search client, number or description" />
+        <SearchBox label="Search invoices" placeholder="Search client, number, item" />
       </div>
 
       <DataTable
