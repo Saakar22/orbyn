@@ -160,6 +160,8 @@ export function createOrbynTools(workspaceId: string) {
           totalMinor: invoice.totalMinor,
           currency: invoice.currency,
           dueDate: invoice.dueDate.toISOString(),
+          // The client's PayPal checkout. Clients can pay the full balance or part of it there.
+          payPath: `/pay/${invoice.publicToken}`,
           alreadyIssued,
         };
       },
